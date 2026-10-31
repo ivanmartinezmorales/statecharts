@@ -11,10 +11,15 @@ export interface Face {
   readonly moved: readonly string[];
 }
 
-export interface FaceInfo {
-  /** Centroid of the face on the unfolded sheet. */
-  readonly c: Vec2;
-  movedIn(stepId: string): boolean;
+/**
+ * Which layers a fold takes, as plain data. A face qualifies when every given condition holds.
+ * `half` looks at where the face sits on the unfolded sheet, split at `at` (default 50).
+ */
+export interface Only {
+  readonly half?: 'top' | 'bottom' | 'left' | 'right';
+  readonly at?: number;
+  readonly movedIn?: string;
+  readonly notMovedIn?: readonly string[];
 }
 
 type FoldKind = 'valley' | 'mountain' | 'crease';
@@ -26,7 +31,7 @@ export type Step =
       readonly line: Line;
       /** Any point on the side of the line that moves. */
       readonly move: Vec2;
-      readonly only?: (f: FaceInfo) => boolean;
+      readonly only?: Only;
       readonly text: string;
     }
   | { readonly kind: 'flip'; readonly id?: string; readonly text: string }
@@ -124,8 +129,13 @@ function split(face: Face, dist: (p: Vec2) => number): [Face | null, Face | null
   return [make(pos), make(neg)];
 }
 
-function info(face: Face): FaceInfo {
-  return { c: centroid(face.orig), movedIn: (id) => face.moved.includes(id) };
+function matches(face: Face, only: Only): boolean {
+  const c = centroid(face.orig);
+  const at = only.at ?? 50;
+  const half = { top: c.y < at, bottom: c.y > at, left: c.x < at, right: c.x > at };
+  if (only.half && !half[only.half]) return false;
+  if (only.movedIn && !face.moved.includes(only.movedIn)) return false;
+  return !only.notMovedIn?.some((id) => face.moved.includes(id));
 }
 
 function resolveFold(faces: readonly Face[], step: FoldStep, stepId: string): Stage {
@@ -134,7 +144,7 @@ function resolveFold(faces: readonly Face[], step: FoldStep, stepId: string): St
   const moving = new Set<number>();
   for (const face of faces) {
     const [pos, neg] = split(face, dist);
-    if (!pos || (step.only && !step.only(info(pos)))) {
+    if (!pos || (step.only && !matches(pos, step.only))) {
       out.push(face);
       continue;
     }
