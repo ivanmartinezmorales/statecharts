@@ -205,4 +205,4 @@ const scenes = {
   },
 };
 
-module.exports = { scenes };
+module.exports = { scenes, room: { bedroomWall, bedroomWindow, bookshelf, bed, nightstand, lamp, floorboards } };
