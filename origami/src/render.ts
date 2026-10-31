@@ -1,7 +1,6 @@
 import { area, bounds, centroid, foldFrame, reflect, v, type Face, type Stage, type Vec2 } from './paper';
 
 type Vec3 = Vec2 & { z: number };
-type Drawn = { pts: Vec3[]; face: Face; order: number };
 
 export interface View {
   readonly minX: number;
@@ -9,145 +8,311 @@ export interface View {
   readonly size: number;
 }
 
+/** Orbit angles in radians; 0,0 looks straight down at the table like a diagram. */
+export interface Camera {
+  yaw: number;
+  pitch: number;
+}
+
+export interface Dot {
+  readonly x: number;
+  readonly y: number;
+  readonly r: number;
+}
+
+/** Canvas resolution. The canvas is scaled up with nearest-neighbour sampling for the pixel look. */
+const PIXELS = 112;
+
 /** A square viewBox that fits every state of the model, so it never jumps between steps. */
 export function fitView(stages: readonly Stage[]): View {
   const b = bounds(stages.flatMap((s) => [...s.faces, ...s.after]));
-  const size = Math.max(b.maxX - b.minX, b.maxY - b.minY) * 1.22;
+  const size = Math.max(b.maxX - b.minX, b.maxY - b.minY) * 1.3;
   return { minX: (b.minX + b.maxX - size) / 2, minY: (b.minY + b.maxY - size) / 2, size };
 }
 
 const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 const flat = (p: Vec2): Vec3 => ({ ...p, z: 0 });
+const UP: Vec3 = { x: 0, y: 0, z: 1 };
 
-function posed(stage: Stage, t: number): Drawn[] {
+/** Faces that share one plane; their stacking order is their layer order, seen from the plane's front. */
+interface Sheet {
+  readonly normal: Vec3;
+  readonly faces: { face: Face; pts: Vec3[] }[];
+}
+
+interface Pose {
+  readonly still: Sheet;
+  /** The flap being folded and which side of the table plane it swings through (1 = toward you). */
+  readonly flap?: Sheet & { side: number };
+}
+
+function pose(stage: Stage, t: number): Pose {
   const { step, faces, moving } = stage;
-  const byLayer = (a: Drawn, b: Drawn) => a.order - b.order;
+  const e = ease(t);
 
   if (step.kind === 'rotate') {
-    const r = ((step.deg * Math.PI) / 180) * ease(t);
+    const r = ((step.deg * Math.PI) / 180) * e;
     const b = bounds(faces);
     const c = v((b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2);
-    return faces
-      .map((face) => ({
-        face,
-        order: face.layer,
-        pts: face.pts.map((p) =>
-          flat(v(c.x + (p.x - c.x) * Math.cos(r) - (p.y - c.y) * Math.sin(r), c.y + (p.x - c.x) * Math.sin(r) + (p.y - c.y) * Math.cos(r))),
-        ),
-      }))
-      .sort(byLayer);
+    const spin = (p: Vec2) =>
+      flat(v(c.x + (p.x - c.x) * Math.cos(r) - (p.y - c.y) * Math.sin(r), c.y + (p.x - c.x) * Math.sin(r) + (p.y - c.y) * Math.cos(r)));
+    return { still: { normal: UP, faces: faces.map((face) => ({ face, pts: face.pts.map(spin) })) } };
   }
 
   if (step.kind === 'flip') {
     const b = bounds(faces);
     const cx = (b.minX + b.maxX) / 2;
-    const phi = Math.PI * ease(t);
-    return faces
-      .map((face) => ({
-        face,
-        order: phi < Math.PI / 2 ? face.layer : -face.layer,
-        pts: face.pts.map((p) => ({ x: cx + (p.x - cx) * Math.cos(phi), y: p.y, z: (p.x - cx) * Math.sin(phi) })),
-      }))
-      .sort(byLayer);
+    const phi = Math.PI * e;
+    const turn = (p: Vec2): Vec3 => ({ x: cx + (p.x - cx) * Math.cos(phi), y: p.y, z: (p.x - cx) * Math.sin(phi) });
+    return {
+      still: { normal: { x: -Math.sin(phi), y: 0, z: Math.cos(phi) }, faces: faces.map((face) => ({ face, pts: face.pts.map(turn) })) },
+    };
   }
 
   const { a, u, n } = foldFrame(step.line, step.move);
-  const e = ease(t);
   const theta = Math.PI * (step.kind === 'crease' ? Math.sin(Math.PI * e) * 0.97 : e);
-  const up = step.kind === 'mountain' ? -1 : 1;
+  const side = step.kind === 'mountain' ? -1 : 1;
   const turn = (p: Vec2): Vec3 => {
     const along = (p.x - a.x) * u.x + (p.y - a.y) * u.y;
     const r = (p.x - a.x) * n.x + (p.y - a.y) * n.y;
     const rc = r * Math.cos(theta);
-    return { x: a.x + u.x * along + n.x * rc, y: a.y + u.y * along + n.y * rc, z: up * r * Math.sin(theta) };
+    return { x: a.x + u.x * along + n.x * rc, y: a.y + u.y * along + n.y * rc, z: side * r * Math.sin(theta) };
   };
-  const pastVertical = theta > Math.PI / 2;
-  const still: Drawn[] = [];
-  const movers: Drawn[] = [];
+  const still: Sheet['faces'] = [];
+  const flap: Sheet['faces'] = [];
   faces.forEach((face, i) => {
-    if (moving.has(i)) movers.push({ face, order: pastVertical ? -face.layer : face.layer, pts: face.pts.map(turn) });
-    else still.push({ face, order: face.layer, pts: face.pts.map(flat) });
+    if (moving.has(i)) flap.push({ face, pts: face.pts.map(turn) });
+    else still.push({ face, pts: face.pts.map(flat) });
   });
-  still.sort(byLayer);
-  movers.sort(byLayer);
-  return up > 0 ? [...still, ...movers] : [...movers, ...still];
+  const s = Math.sin(theta) * side;
+  return {
+    still: { normal: UP, faces: still },
+    flap: { normal: { x: -n.x * s, y: -n.y * s, z: Math.cos(theta) }, faces: flap, side },
+  };
 }
 
-const svgPts = (pts: readonly Vec2[]) => pts.map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ');
-
-function project(view: View, p: Vec3): Vec2 {
-  const cx = view.minX + view.size / 2;
-  const cy = view.minY + view.size / 2;
-  const s = (view.size * 3) / (view.size * 3 - p.z);
-  return v(cx + (p.x - cx) * s, cy + (p.y - cy) * s);
+function orbit(d: Vec3, cam: Camera): Vec3 {
+  const cy = Math.cos(cam.yaw);
+  const sy = Math.sin(cam.yaw);
+  const cp = Math.cos(cam.pitch);
+  const sp = Math.sin(cam.pitch);
+  const x = d.x * cy + d.z * sy;
+  const z = -d.x * sy + d.z * cy;
+  return { x, y: d.y * cp - z * sp, z: d.y * sp + z * cp };
 }
 
-function notation(stage: Stage, view: View): string {
-  const { step } = stage;
-  const w = view.size / 220;
-  if (step.kind === 'flip') {
+/**
+ * Painter's order. Within a sheet, layers stack bottom-up when you see its front and top-down from
+ * behind. The flap sits entirely on one side of the table plane, so it is either fully in front of
+ * or fully behind the still paper depending on which side of that plane the camera is on.
+ */
+function paintOrder(p: Pose, cam: Camera) {
+  const facing = (sheet: Sheet) => orbit(sheet.normal, cam).z >= 0;
+  const stack = (sheet: Sheet) =>
+    [...sheet.faces].sort((x, y) => (facing(sheet) ? x.face.layer - y.face.layer : y.face.layer - x.face.layer));
+  const still = stack(p.still);
+  if (!p.flap) return still;
+  const flap = stack(p.flap);
+  return p.flap.side > 0 === facing(p.still) ? [...still, ...flap] : [...flap, ...still];
+}
+
+function hash(x: number, y: number) {
+  const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+function rgb(hex: string): [number, number, number] {
+  const h = hex.replace('#', '');
+  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)) as [number, number, number];
+}
+
+/** Snap anti-aliased edges to hard pixels, optionally adding a paper grain. */
+function crisp(ctx: CanvasRenderingContext2D, grain: boolean) {
+  const img = ctx.getImageData(0, 0, PIXELS, PIXELS);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3]! < 110) {
+      d[i + 3] = 0;
+      continue;
+    }
+    d[i + 3] = 255;
+    if (grain) {
+      const p = i / 4;
+      const k = 0.95 + 0.06 * hash(p % PIXELS, Math.floor(p / PIXELS));
+      d[i] = d[i]! * k;
+      d[i + 1] = d[i + 1]! * k;
+      d[i + 2] = d[i + 2]! * k;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+function layer() {
+  const c = document.createElement('canvas');
+  c.width = c.height = PIXELS;
+  return c.getContext('2d', { willReadFrequently: true })!;
+}
+
+export class PixelStage {
+  private readonly ctx: CanvasRenderingContext2D;
+  private readonly paper = layer();
+  private readonly ink = layer();
+  private backdrop: { key: string; img: ImageData } | null = null;
+
+  constructor(readonly canvas: HTMLCanvasElement) {
+    canvas.width = canvas.height = PIXELS;
+    this.ctx = canvas.getContext('2d')!;
+  }
+
+  draw(stage: Stage, t: number, view: View, whiteUp: boolean, cam: Camera, dots: readonly Dot[] = []) {
+    const css = getComputedStyle(document.documentElement);
+    const color = (name: string) => css.getPropertyValue(name).trim();
+    const scale = PIXELS / view.size;
+    // Orbit around the paper itself, so it spins in place instead of swinging around the frame.
     const b = bounds(stage.faces);
-    const x = b.maxX + view.size * 0.06;
-    const y = b.minY + view.size * 0.04;
-    const r = view.size * 0.045;
-    return `<g class="note" stroke-width="${w * 1.4}">
-      <path d="M ${x - r} ${y} A ${r} ${r} 0 1 1 ${x + r * 0.7} ${y + r * 0.7}" fill="none" marker-end="url(#head)"/>
-      <text x="${x}" y="${y + r * 2.6}" font-size="${view.size * 0.032}" text-anchor="middle">turn over</text></g>`;
+    const pivot = v((b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2);
+    const project = (p: Vec3): Vec2 => {
+      const r = orbit({ x: p.x - pivot.x, y: p.y - pivot.y, z: p.z }, cam);
+      const s = (view.size * 3) / (view.size * 3 - r.z);
+      return v((pivot.x + r.x * s - view.minX) * scale, (pivot.y + r.y * s - view.minY) * scale);
+    };
+
+    this.ctx.putImageData(this.background(color('--bg'), color('--muted')), 0, 0);
+
+    const p = pose(stage, t);
+    const g = this.paper;
+    g.clearRect(0, 0, PIXELS, PIXELS);
+    g.lineWidth = 0.7;
+    g.lineJoin = 'round';
+    for (const { face, pts } of paintOrder(p, cam)) {
+      const scr = pts.map(project);
+      const a = area(scr);
+      const colorUp = Math.sign(a) === Math.sign(area(face.orig)) !== whiteUp;
+      const light = Math.min(1, Math.abs(a / (area(face.orig) * scale * scale)));
+      g.fillStyle = `color-mix(in srgb, ${color(colorUp ? '--paper' : '--paper-back')} ${Math.round(58 + 42 * light)}%, #000)`;
+      g.strokeStyle = 'rgba(0,0,0,0.45)';
+      g.beginPath();
+      scr.forEach((q, k) => (k ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y)));
+      g.closePath();
+      g.fill();
+      g.stroke();
+    }
+    if (dots.length && orbit(p.still.normal, cam).z > 0) {
+      g.fillStyle = '#161616';
+      for (const dot of dots) {
+        const c = project(flat(dot));
+        g.beginPath();
+        g.arc(c.x, c.y, Math.max(1.2, dot.r * scale), 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+    crisp(g, true);
+    this.ctx.drawImage(g.canvas, 0, 0);
+
+    if (t < 0.34) {
+      const k = this.ink;
+      k.clearRect(0, 0, PIXELS, PIXELS);
+      k.strokeStyle = k.fillStyle = color('--accent');
+      k.lineWidth = 1;
+      notation(k, stage, view, project);
+      crisp(k, false);
+      this.ctx.globalAlpha = 1 - t * 3;
+      this.ctx.drawImage(k.canvas, 0, 0);
+      this.ctx.globalAlpha = 1;
+    }
   }
-  if (step.kind === 'rotate') {
-    const c = centroid(stage.faces.flatMap((f) => f.pts));
-    const r = view.size * 0.38;
-    const sweep = step.deg > 0 ? 1 : 0;
-    const a0 = -Math.PI / 2 - 0.5;
-    const a1 = -Math.PI / 2 + 0.5;
-    const p0 = v(c.x + r * Math.cos(sweep ? a0 : a1), c.y + r * Math.sin(sweep ? a0 : a1));
-    const p1 = v(c.x + r * Math.cos(sweep ? a1 : a0), c.y + r * Math.sin(sweep ? a1 : a0));
-    return `<g class="note" stroke-width="${w * 1.4}"><path d="M ${p0.x} ${p0.y} A ${r} ${r} 0 0 ${sweep} ${p1.x} ${p1.y}" fill="none" marker-end="url(#head)"/></g>`;
+
+  /** Dithered mosaic, cached per theme. */
+  private background(bg: string, muted: string): ImageData {
+    const key = bg + muted;
+    if (this.backdrop?.key === key) return this.backdrop.img;
+    const img = this.ctx.createImageData(PIXELS, PIXELS);
+    const [br, bgG, bb] = rgb(bg);
+    const [mr, mg, mb] = rgb(muted);
+    for (let y = 0; y < PIXELS; y++) {
+      for (let x = 0; x < PIXELS; x++) {
+        const wave = 0.5 + 0.5 * Math.sin(x / 9 + y / 6);
+        const m = (4 + (hash(x, y) * 0.7 + wave * 0.3) * 16) / 100;
+        const i = (y * PIXELS + x) * 4;
+        img.data[i] = br + (mr - br) * m;
+        img.data[i + 1] = bgG + (mg - bgG) * m;
+        img.data[i + 2] = bb + (mb - bb) * m;
+        img.data[i + 3] = 255;
+      }
+    }
+    this.backdrop = { key, img };
+    return img;
   }
+}
+
+function head(g: CanvasRenderingContext2D, tip: Vec2, from: Vec2, open: boolean) {
+  const d = Math.hypot(tip.x - from.x, tip.y - from.y) || 1;
+  const ux = (tip.x - from.x) / d;
+  const uy = (tip.y - from.y) / d;
+  const size = 4;
+  const l = v(tip.x - ux * size - uy * size * 0.6, tip.y - uy * size + ux * size * 0.6);
+  const r = v(tip.x - ux * size + uy * size * 0.6, tip.y - uy * size - ux * size * 0.6);
+  g.setLineDash([]);
+  g.beginPath();
+  g.moveTo(l.x, l.y);
+  g.lineTo(tip.x, tip.y);
+  g.lineTo(r.x, r.y);
+  if (open) g.stroke();
+  else {
+    g.closePath();
+    g.fill();
+  }
+}
+
+function notation(g: CanvasRenderingContext2D, stage: Stage, view: View, project: (p: Vec3) => Vec2) {
+  const { step } = stage;
+  const arc = (pts: Vec3[], open: boolean, both = false) => {
+    const s = pts.map(project);
+    g.setLineDash([]);
+    g.beginPath();
+    s.forEach((q, k) => (k ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y)));
+    g.stroke();
+    head(g, s[s.length - 1]!, s[s.length - 3] ?? s[0]!, open);
+    if (both) head(g, s[0]!, s[2] ?? s[1]!, open);
+  };
+  const curve = (from: Vec3, ctrl: Vec3, to: Vec3) =>
+    Array.from({ length: 17 }, (_, k) => {
+      const t = k / 16;
+      const m = (a: number, b: number, c: number) => (1 - t) ** 2 * a + 2 * (1 - t) * t * b + t * t * c;
+      return { x: m(from.x, ctrl.x, to.x), y: m(from.y, ctrl.y, to.y), z: m(from.z, ctrl.z, to.z) };
+    });
+
+  if (step.kind === 'flip' || step.kind === 'rotate') {
+    const b = bounds(stage.faces);
+    const c = centroid([v(b.minX, b.minY), v(b.maxX, b.maxY)]);
+    const r = step.kind === 'flip' ? view.size * 0.08 : view.size * 0.4;
+    const at = step.kind === 'flip' ? v(b.maxX + r * 0.4, b.minY) : c;
+    const [a0, a1] = step.kind === 'flip' ? [Math.PI * 0.9, Math.PI * 2.4] : [-Math.PI / 2 - 0.5, -Math.PI / 2 + 0.5];
+    const dir = step.kind === 'rotate' && step.deg < 0 ? -1 : 1;
+    const pts = Array.from({ length: 21 }, (_, k) => {
+      const ang = dir > 0 ? a0 + ((a1 - a0) * k) / 20 : a1 - ((a1 - a0) * k) / 20;
+      return flat(v(at.x + r * Math.cos(ang), at.y + r * Math.sin(ang)));
+    });
+    arc(pts, false);
+    return;
+  }
+
   const [a, b] = step.line;
   const { u } = foldFrame(step.line, step.move);
   const ext = view.size * 0.04;
-  const l0 = v(a.x - u.x * ext, a.y - u.y * ext);
-  const l1 = v(b.x + u.x * ext, b.y + u.y * ext);
-  const dash = step.kind === 'mountain' ? `${w * 6} ${w * 2.5} ${w * 1.2} ${w * 2.5}` : `${w * 4.5} ${w * 3}`;
+  const l0 = project(flat(v(a.x - u.x * ext, a.y - u.y * ext)));
+  const l1 = project(flat(v(b.x + u.x * ext, b.y + u.y * ext)));
+  g.setLineDash(step.kind === 'mountain' ? [4, 2, 1, 2] : [3, 2]);
+  g.beginPath();
+  g.moveTo(l0.x, l0.y);
+  g.lineTo(l1.x, l1.y);
+  g.stroke();
+
   const movers = stage.faces.filter((_, i) => stage.moving.has(i));
   const from = movers.length ? centroid(movers.flatMap((f) => f.pts)) : step.move;
   const to = reflect(from, step.line);
   const span = Math.hypot(to.x - from.x, to.y - from.y);
-  const ctrl = v((from.x + to.x) / 2 + u.x * span * 0.45, (from.y + to.y) / 2 + u.y * span * 0.45);
-  const marker = step.kind === 'mountain' ? 'head-open' : 'head';
-  const start = step.kind === 'crease' ? `marker-start="url(#${marker}-back)"` : '';
-  return `<g class="note">
-    <line class="fold-line ${step.kind}" x1="${l0.x}" y1="${l0.y}" x2="${l1.x}" y2="${l1.y}" stroke-width="${w * 1.5}" stroke-dasharray="${dash}"/>
-    <path d="M ${from.x} ${from.y} Q ${ctrl.x} ${ctrl.y} ${to.x} ${to.y}" fill="none" stroke-width="${w * 1.3}" marker-end="url(#${marker})" ${start}/>
-  </g>`;
-}
-
-export function renderStage(stage: Stage, t: number, view: View, whiteUp: boolean, extras = ''): string {
-  const drawn = posed(stage, t);
-  const polys = drawn
-    .map(({ pts, face }) => {
-      const scr = pts.map((p) => project(view, p));
-      const a = area(scr);
-      const a0 = area(face.orig);
-      const colorUp = Math.sign(a) === Math.sign(a0) !== whiteUp;
-      const light = Math.min(1, Math.abs(a / a0));
-      const shade = Math.round(60 + 40 * light);
-      const fill = colorUp ? 'var(--paper)' : 'var(--paper-back)';
-      return `<polygon points="${svgPts(scr)}" style="fill: color-mix(in srgb, ${fill} ${shade}%, #000)"/>`;
-    })
-    .join('');
-  const showNote = t < 0.999;
-  const { minX, minY, size } = view;
-  return `<svg viewBox="${minX} ${minY} ${size} ${size}" role="img" aria-label="${stage.step.text}">
-    <defs>
-      <marker id="head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker>
-      <marker id="head-back" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker>
-      <marker id="head-open" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10" class="head-open"/></marker>
-      <marker id="head-open-back" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10" class="head-open"/></marker>
-    </defs>
-    <g class="paper" stroke-width="${size / 700}">${polys}</g>
-    ${showNote ? `<g style="opacity:${Math.max(0, 1 - t * 3)}">${notation(stage, view)}</g>` : ''}
-    ${extras}
-  </svg>`;
+  const side = step.kind === 'mountain' ? -1 : 1;
+  const ctrl = { x: (from.x + to.x) / 2 + u.x * span * 0.3, y: (from.y + to.y) / 2 + u.y * span * 0.3, z: side * span * 0.6 };
+  arc(curve(flat(from), ctrl, flat(to)), step.kind === 'mountain', step.kind === 'crease');
 }

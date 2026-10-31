@@ -1,7 +1,7 @@
 import './style.css';
 import { all, levels, upcoming, type Model } from './models';
 import { buildStages, sheet } from './paper';
-import { fitView, renderStage } from './render';
+import { fitView, PixelStage, type Camera } from './render';
 import { applyTheme, drawBanner, themes, currentTheme } from './theme';
 
 const app = document.querySelector<HTMLElement>('#app')!;
@@ -130,11 +130,16 @@ let stopFold: (() => void) | null = null;
 function fold(model: Model) {
   const stages = buildStages(sheet(model.paper), model.steps);
   const view = fitView(stages);
-  const idx = all.indexOf(model);
-  const next = all[idx + 1];
+  const next = all[all.indexOf(model) + 1];
+  const last = stages.length - 1;
+  const cam: Camera = { yaw: 0, pitch: 0 };
   let i = 0;
   let t = 0;
+  let playing = false;
+  let spinning = false;
+  let resetting = false;
   let raf = 0;
+  let then = 0;
 
   app.innerHTML = `
     <a class="back" href="#/${model.level === 'basics' ? 'learn' : 'models'}">← ${model.level === 'basics' ? 'learn' : 'models'}</a>
@@ -143,7 +148,14 @@ function fold(model: Model) {
       <p class="sub">${model.level} · ${model.steps.length} steps</p>
     </header>
     <div class="steps" role="tablist"></div>
-    <figure class="stage"></figure>
+    <figure class="stage">
+      <canvas role="img"></canvas>
+      <div class="view-controls">
+        <button class="spin" aria-pressed="false" title="spin (s)">spin</button>
+        <button class="reset" title="reset view (v)">top view</button>
+      </div>
+      <span class="hint">drag to look around</span>
+    </figure>
     <p class="step-text" aria-live="polite"></p>
     <div class="controls">
       <button class="prev" aria-label="previous step">←</button>
@@ -151,32 +163,37 @@ function fold(model: Model) {
       <button class="next" aria-label="next step">→</button>
       <input class="scrub" type="range" min="0" max="1000" value="0" aria-label="fold progress" />
     </div>
-    <p class="keys"><kbd>space</kbd> fold <kbd>←</kbd><kbd>→</kbd> steps <kbd>r</kbd> restart</p>
+    <p class="keys"><kbd>space</kbd> fold <kbd>←</kbd><kbd>→</kbd> steps <kbd>s</kbd> spin <kbd>v</kbd> top view <kbd>r</kbd> restart</p>
     <div class="finish" hidden></div>`;
 
   const $ = <T extends Element>(sel: string) => app.querySelector<T>(sel)!;
   const figure = $<HTMLElement>('.stage');
+  const canvas = $<HTMLCanvasElement>('.stage canvas');
   const text = $<HTMLElement>('.step-text');
   const steps = $<HTMLElement>('.steps');
   const play = $<HTMLButtonElement>('.play');
+  const spin = $<HTMLButtonElement>('.spin');
+  const reset = $<HTMLButtonElement>('.reset');
   const scrub = $<HTMLInputElement>('.scrub');
   const finish = $<HTMLElement>('.finish');
+  const pixels = new PixelStage(canvas);
 
   steps.innerHTML = stages.map((_, k) => `<button role="tab" aria-label="step ${k + 1}" data-k="${k}"></button>`).join('');
   steps.querySelectorAll<HTMLButtonElement>('button').forEach((b) =>
     b.addEventListener('click', () => go(Number(b.dataset.k), 0)),
   );
 
-  const last = stages.length - 1;
   const complete = () => i === last && t >= 1;
 
   function draw() {
     const stage = stages[i]!;
-    const deco = complete() && model.decorate ? `<g class="deco">${model.decorate}</g>` : '';
-    figure.innerHTML = renderStage(stage, t, view, model.whiteUp, deco);
+    pixels.draw(stage, t, view, model.whiteUp, cam, complete() ? model.dots : []);
+    canvas.setAttribute('aria-label', stage.step.text);
     text.innerHTML = `<span class="num">${String(i + 1).padStart(2, '0')}</span>${esc(stage.step.text)}`;
     scrub.value = String(Math.round(t * 1000));
-    play.textContent = t >= 1 ? (i === last ? 'again' : 'next step') : raf ? 'pause' : 'fold';
+    play.textContent = t >= 1 ? (i === last ? 'again' : 'next step') : playing ? 'pause' : 'fold';
+    spin.setAttribute('aria-pressed', String(spinning));
+    reset.disabled = !resetting && cam.yaw === 0 && cam.pitch === 0;
     steps.querySelectorAll('button').forEach((b, k) => {
       b.classList.toggle('past', k < i || (k === i && t >= 1));
       b.setAttribute('aria-selected', String(k === i));
@@ -190,47 +207,99 @@ function fold(model: Model) {
     }
   }
 
-  function stop() {
-    cancelAnimationFrame(raf);
-    raf = 0;
+  function frame(now: number) {
+    const dt = Math.min(50, now - then);
+    then = now;
+    if (playing) {
+      t = Math.min(1, t + dt / (stages[i]!.step.kind === 'crease' ? 1800 : 1300));
+      playing = t < 1;
+    }
+    if (spinning) cam.yaw += dt * 0.0011;
+    if (resetting) {
+      cam.yaw = Math.atan2(Math.sin(cam.yaw), Math.cos(cam.yaw)) * 0.85;
+      cam.pitch *= 0.85;
+      if (Math.abs(cam.yaw) + Math.abs(cam.pitch) < 0.002) {
+        cam.yaw = cam.pitch = 0;
+        resetting = false;
+      }
+    }
+    draw();
+    raf = playing || spinning || resetting ? requestAnimationFrame(frame) : 0;
+  }
+
+  function kick() {
+    if (raf) return;
+    then = performance.now();
+    raf = requestAnimationFrame(frame);
   }
 
   function animate() {
-    stop();
-    const duration = stages[i]!.step.kind === 'crease' ? 1800 : 1300;
-    let prev = performance.now();
-    const tick = (now: number) => {
-      t = Math.min(1, t + (now - prev) / duration);
-      prev = now;
-      raf = t < 1 ? requestAnimationFrame(tick) : 0;
-      draw();
-    };
-    raf = requestAnimationFrame(tick);
+    playing = true;
+    kick();
   }
 
   function go(k: number, at: number) {
-    stop();
+    playing = false;
     i = Math.max(0, Math.min(last, k));
     t = at;
     draw();
   }
 
   function advance() {
-    if (raf) return stop(), draw();
+    if (playing) {
+      playing = false;
+      return draw();
+    }
     if (t < 1) return animate();
     if (i === last) return go(0, 0);
     go(i + 1, 0);
     animate();
   }
 
+  function toggleSpin() {
+    spinning = !spinning;
+    resetting = false;
+    if (spinning) kick();
+    else draw();
+  }
+
+  function topView() {
+    spinning = false;
+    resetting = true;
+    kick();
+  }
+
   play.addEventListener('click', advance);
+  spin.addEventListener('click', toggleSpin);
+  reset.addEventListener('click', topView);
   $<HTMLButtonElement>('.next').addEventListener('click', () => (t < 1 ? animate() : go(i + 1, 0)));
-  $<HTMLButtonElement>('.prev').addEventListener('click', () => (t > 0 && !raf ? go(i, 0) : go(i - 1, 0)));
+  $<HTMLButtonElement>('.prev').addEventListener('click', () => (t > 0 && !playing ? go(i, 0) : go(i - 1, 0)));
   scrub.addEventListener('input', () => {
-    stop();
+    playing = false;
     t = Number(scrub.value) / 1000;
     draw();
   });
+
+  let drag: { x: number; y: number; yaw: number; pitch: number } | null = null;
+  canvas.addEventListener('pointerdown', (e) => {
+    drag = { x: e.clientX, y: e.clientY, yaw: cam.yaw, pitch: cam.pitch };
+    spinning = resetting = false;
+    canvas.setPointerCapture(e.pointerId);
+    figure.classList.add('dragging', 'touched');
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    cam.yaw = drag.yaw + (e.clientX - drag.x) * 0.012;
+    cam.pitch = Math.max(-1.45, Math.min(1.45, drag.pitch - (e.clientY - drag.y) * 0.012));
+    if (!raf) draw();
+  });
+  const release = () => {
+    drag = null;
+    figure.classList.remove('dragging');
+  };
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', release);
+  canvas.addEventListener('dblclick', topView);
 
   const onKey = (e: KeyboardEvent) => {
     if (e.target instanceof HTMLInputElement && e.key !== ' ') return;
@@ -244,11 +313,15 @@ function fold(model: Model) {
       go(t > 0 ? i : i - 1, 0);
     } else if (e.key === 'r') {
       go(0, 0);
+    } else if (e.key === 's') {
+      toggleSpin();
+    } else if (e.key === 'v') {
+      topView();
     }
   };
   window.addEventListener('keydown', onKey);
   stopFold = () => {
-    stop();
+    cancelAnimationFrame(raf);
     window.removeEventListener('keydown', onKey);
   };
   draw();
