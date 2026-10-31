@@ -1,6 +1,5 @@
 import { all, levels, upcoming, type Level, type Model } from './models';
-import { buildStages, sheet } from './paper';
-import { fitView, PixelStage, type Camera } from './render';
+import { PaperCanvas, type Camera } from './engine';
 import { done } from './progress';
 import { esc } from './icons';
 
@@ -15,14 +14,12 @@ const folds = (m: Model) => `${m.steps.length} ${m.steps.length === 1 ? 'step' :
 
 /** Draws a model's finished shape at a three-quarter angle, and can turn it slowly. */
 function preview(canvas: HTMLCanvasElement, model: Model) {
-  const stages = buildStages(sheet(model.paper), model.steps);
-  const last = stages[stages.length - 1]!;
-  const view = fitView([last]);
-  const pixels = new PixelStage(canvas);
+  const paper = new PaperCanvas(canvas, model, true);
+  const last = model.steps.length - 1;
   const cam: Camera = { yaw: -0.45, pitch: 0.5 };
   let raf = 0;
   let then = 0;
-  const draw = () => pixels.draw(last, 1, view, model.whiteUp, cam, model.dots);
+  const draw = () => paper.draw(last, 1, cam, true);
   const tick = (now: number) => {
     cam.yaw += Math.min(50, now - then) * 0.0008;
     then = now;
