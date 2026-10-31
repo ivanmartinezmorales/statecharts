@@ -2,5 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "bash scripts/install-rust.sh && npm install",
   "buildCommand": "PATH=\"$HOME/.cargo/bin:$PATH\" npm run build",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ."
 }
