@@ -9,13 +9,13 @@ export interface Theme {
 }
 
 export const themes: readonly Theme[] = [
-  { name: 'moss', bg: '#021608', text: '#33b863', muted: '#217b41', accent: '#3fe07a', paper: '#3fe07a', paperBack: '#eef3ea' },
-  { name: 'ink', bg: '#0b0b0b', text: '#a3a3a3', muted: '#5f5f5f', accent: '#f2f2f2', paper: '#e4473b', paperBack: '#f4f1ea' },
-  { name: 'washi', bg: '#f7f4ec', text: '#5b5648', muted: '#a39d8c', accent: '#1d1b16', paper: '#d9453a', paperBack: '#fffdf7' },
-  { name: 'sunset', bg: '#190c02', text: '#d9823a', muted: '#7a4a1f', accent: '#ffa552', paper: '#ffa552', paperBack: '#f6efe6' },
-  { name: 'tide', bg: '#030c1d', text: '#4f8fe0', muted: '#2a4f80', accent: '#7ab4ff', paper: '#7ab4ff', paperBack: '#eef2f8' },
-  { name: 'plum', bg: '#11061c', text: '#a070e0', muted: '#5a3d80', accent: '#c69bff', paper: '#c69bff', paperBack: '#f3eff8' },
-  { name: 'sakura', bg: '#1b0610', text: '#e0709a', muted: '#803d58', accent: '#ff9ec2', paper: '#ff9ec2', paperBack: '#f8eef2' },
+  { name: 'moss', bg: '#021608', text: '#33b863', muted: '#2b9150', accent: '#3fe07a', paper: '#3fe07a', paperBack: '#eef3ea' },
+  { name: 'ink', bg: '#0b0b0b', text: '#a3a3a3', muted: '#808080', accent: '#f2f2f2', paper: '#e4473b', paperBack: '#f4f1ea' },
+  { name: 'washi', bg: '#f7f4ec', text: '#5b5648', muted: '#6f675b', accent: '#1d1b16', paper: '#d9453a', paperBack: '#fffdf7' },
+  { name: 'sunset', bg: '#190c02', text: '#d9823a', muted: '#b8743a', accent: '#ffa552', paper: '#ffa552', paperBack: '#f6efe6' },
+  { name: 'tide', bg: '#030c1d', text: '#4f8fe0', muted: '#6085b5', accent: '#7ab4ff', paper: '#7ab4ff', paperBack: '#eef2f8' },
+  { name: 'plum', bg: '#11061c', text: '#a070e0', muted: '#9373c0', accent: '#c69bff', paper: '#c69bff', paperBack: '#f3eff8' },
+  { name: 'sakura', bg: '#1b0610', text: '#e0709a', muted: '#c0708f', accent: '#ff9ec2', paper: '#ff9ec2', paperBack: '#f8eef2' },
 ];
 
 const KEY = 'origami:theme';

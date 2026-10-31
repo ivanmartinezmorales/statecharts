@@ -32,6 +32,14 @@ function markDone(slug: string) {
   renderBar();
 }
 
+// lucide paths, drawn at one size and stroke
+const icon = (d: string) => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+const icons = {
+  check: icon('<path d="M20 6 9 17l-5-5"/>'),
+  left: icon('<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>'),
+  right: icon('<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>'),
+};
+
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => `&${({ '&': 'amp', '<': 'lt', '>': 'gt', '"': 'quot' } as const)[c as '&']};`);
 
 function renderBar() {
@@ -39,7 +47,6 @@ function renderBar() {
   const basics = all.filter((m) => m.level === 'basics');
   const learned = basics.filter((m) => done.has(m.slug)).length;
   const folded = all.filter((m) => done.has(m.slug)).length;
-  const pct = Math.round((folded / all.length) * 100);
   bar.innerHTML = `
     <div class="bar-row">
       <a class="logo" href="#/">折 origami</a>
@@ -56,10 +63,12 @@ function renderBar() {
           .join('')}
       </div>
     </div>
-    <div class="progress" title="${folded} of ${all.length} folded">
-      <div class="fill" style="width:${pct}%"></div>
-    </div>
-    <div class="progress-label">${folded}/${all.length} folded · ${pct}%</div>`;
+    <div class="progress-row">
+      <div class="progress" role="progressbar" aria-label="models folded" aria-valuenow="${folded}" aria-valuemin="0" aria-valuemax="${all.length}">
+        <div class="fill" style="transform:scaleX(${folded / all.length})"></div>
+      </div>
+      <span class="progress-label">${folded}/${all.length} folded</span>
+    </div>`;
   bar.querySelectorAll<HTMLButtonElement>('[data-theme]').forEach((b) =>
     b.addEventListener('click', () => {
       applyTheme(b.dataset.theme!);
@@ -71,7 +80,7 @@ function renderBar() {
 }
 
 function row(m: Model) {
-  const check = done.has(m.slug) ? '<span class="tick">✓</span>' : '';
+  const check = done.has(m.slug) ? `<span class="done" title="folded">${icons.check}</span>` : '';
   return `<li><a href="#/fold/${m.slug}"><span class="name">${m.name}${check}</span><span class="meta">${m.blurb}</span></a></li>`;
 }
 
@@ -95,7 +104,7 @@ function home() {
     <header class="intro">
       <h1>origami</h1>
       <p class="sub">learn to fold · one crease at a time</p>
-      <p>every model here is folded live. press <kbd>space</kbd> to make a fold, drag the slider to scrub through it, and use the arrow keys to move between steps.</p>
+      <p>every model here is folded live. press <kbd>space</kbd> to make a fold, drag the slider to scrub through it, and drag the paper to see each step from any side.</p>
       <p>start with <a href="#/learn">the basics</a> to learn the symbols diagrams use, then work up from a <a href="#/fold/dog">dog face</a> to a <a href="#/fold/kabuto">samurai helmet</a>.</p>
     </header>
     ${levels.map(levelSection).join('')}`;
@@ -110,9 +119,9 @@ function learn() {
     </header>
     ${levelSection(levels[0]!)}
     <section><h2>tips</h2><ul class="tips">
-      <li>fold on a hard, flat table.</li>
-      <li>line up corners and edges first, then crease from the middle out.</li>
-      <li>use square paper about 15 cm across. printer paper cut square works fine.</li>
+      <li>fold on a hard, flat table</li>
+      <li>line up corners and edges first, then crease from the middle out</li>
+      <li>use square paper about 15 cm across; printer paper cut square works fine</li>
     </ul></section>`;
 }
 
@@ -142,7 +151,7 @@ function fold(model: Model) {
   let then = 0;
 
   app.innerHTML = `
-    <a class="back" href="#/${model.level === 'basics' ? 'learn' : 'models'}">← ${model.level === 'basics' ? 'learn' : 'models'}</a>
+    <a class="back" href="#/${model.level === 'basics' ? 'learn' : 'models'}">${icons.left}${model.level === 'basics' ? 'learn' : 'models'}</a>
     <header class="intro tight">
       <h1>${model.name}</h1>
       <p class="sub">${model.level} · ${model.steps.length} steps</p>
@@ -158,12 +167,18 @@ function fold(model: Model) {
     </figure>
     <p class="step-text" aria-live="polite"></p>
     <div class="controls">
-      <button class="prev" aria-label="previous step">←</button>
+      <button class="prev" aria-label="previous step">${icons.left}</button>
       <button class="play"></button>
-      <button class="next" aria-label="next step">→</button>
+      <button class="next" aria-label="next step">${icons.right}</button>
       <input class="scrub" type="range" min="0" max="1000" value="0" aria-label="fold progress" />
     </div>
-    <p class="keys"><kbd>space</kbd> fold <kbd>←</kbd><kbd>→</kbd> steps <kbd>s</kbd> spin <kbd>v</kbd> top view <kbd>r</kbd> restart</p>
+    <p class="keys">
+      <span><kbd>space</kbd> fold</span>
+      <span><kbd>←</kbd><kbd>→</kbd> steps</span>
+      <span><kbd>s</kbd> spin</span>
+      <span><kbd>v</kbd> top view</span>
+      <span><kbd>r</kbd> restart</span>
+    </p>
     <div class="finish" hidden></div>`;
 
   const $ = <T extends Element>(sel: string) => app.querySelector<T>(sel)!;
@@ -201,8 +216,8 @@ function fold(model: Model) {
     finish.hidden = !complete();
     if (complete()) {
       markDone(model.slug);
-      finish.innerHTML = `<p><span class="tick">✓</span> ${esc(model.finish)}</p>${
-        next ? `<a class="cta" href="#/fold/${next.slug}">next: ${next.name} →</a>` : '<a class="cta" href="#/models">all models →</a>'
+      finish.innerHTML = `<p>${esc(model.finish)}</p>${
+        next ? `<a class="cta" href="#/fold/${next.slug}">next: ${next.name}</a>` : '<a class="cta" href="#/models">all models</a>'
       }`;
     }
   }
