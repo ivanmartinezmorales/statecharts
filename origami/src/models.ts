@@ -1,4 +1,5 @@
 import { v, type FaceInfo, type Step, type Vec2 } from './paper';
+import type { Dot } from './render';
 
 export type Level = 'basics' | 'beginner' | 'intermediate' | 'advanced';
 
@@ -12,8 +13,8 @@ export interface Model {
   readonly whiteUp: boolean;
   readonly steps: readonly Step[];
   readonly finish: string;
-  /** Extra SVG drawn on the finished model, in paper coordinates. */
-  readonly decorate?: string;
+  /** Eyes and noses drawn on the finished model, in paper coordinates. */
+  readonly dots?: readonly Dot[];
 }
 
 export interface Upcoming {
@@ -176,8 +177,11 @@ const models: Model[] = [
       },
     ],
     finish: 'draw on eyes and a nose. woof.',
-    decorate:
-      '<circle cx="39" cy="61" r="2.6"/><circle cx="61" cy="61" r="2.6"/><ellipse cx="50" cy="77" rx="3.6" ry="2.6"/>',
+    dots: [
+      { x: 39, y: 61, r: 2.6 },
+      { x: 61, y: 61, r: 2.6 },
+      { x: 50, y: 77, r: 3.2 },
+    ],
   },
   {
     slug: 'cup',

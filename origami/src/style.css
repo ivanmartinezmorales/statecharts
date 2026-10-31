@@ -277,56 +277,67 @@ h2 {
 }
 
 .stage {
+  position: relative;
   margin: 0 auto;
   width: min(100%, 58vh);
   aspect-ratio: 1;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background:
-    radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--muted) 18%, transparent), transparent 70%),
-    repeating-linear-gradient(0deg, transparent 0 23px, color-mix(in srgb, var(--muted) 10%, transparent) 23px 24px),
-    repeating-linear-gradient(90deg, transparent 0 23px, color-mix(in srgb, var(--muted) 10%, transparent) 23px 24px);
+  overflow: hidden;
 }
 
-.stage svg {
+.stage canvas {
   display: block;
   width: 100%;
   height: 100%;
+  image-rendering: pixelated;
+  cursor: grab;
+  touch-action: none;
 }
 
-.paper polygon {
-  stroke: color-mix(in srgb, #000 40%, transparent);
-  stroke-linejoin: round;
+.stage.dragging canvas {
+  cursor: grabbing;
 }
 
-.note {
-  stroke: var(--accent);
-  fill: none;
+.view-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
 }
 
-.note text {
-  fill: var(--accent);
-  stroke: none;
-  font-family: var(--mono);
+.view-controls button {
+  font: 11px var(--mono);
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 2px 7px;
+  color: var(--accent);
 }
 
-.fold-line {
-  stroke: var(--accent);
-  stroke-linecap: round;
+.view-controls button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--bg);
 }
 
-.head {
-  fill: var(--accent);
+.view-controls button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
-.head-open {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 1.4;
+.hint {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  font: 10px var(--mono);
+  color: var(--muted);
+  pointer-events: none;
+  transition: opacity 0.4s;
 }
 
-.deco {
-  fill: #1b1b1b;
+.stage.touched .hint {
+  opacity: 0;
 }
 
 .step-text {
