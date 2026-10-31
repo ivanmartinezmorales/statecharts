@@ -3,6 +3,7 @@ import { all, levels } from './models';
 import { picker, type Filter } from './picker';
 import { workspace } from './workspace';
 import { done } from './progress';
+import { ready } from './engine';
 
 const app = document.querySelector<HTMLElement>('#app')!;
 const bar = document.querySelector<HTMLElement>('#bar')!;
@@ -51,4 +52,4 @@ function route() {
 
 window.addEventListener('hashchange', route);
 window.addEventListener('progress', renderBar);
-route();
+void ready.then(route);

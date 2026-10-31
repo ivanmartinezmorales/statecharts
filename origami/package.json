@@ -4,13 +4,15 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "wasm": "wasm-pack build engine --target web --release --out-dir pkg --no-pack",
+    "dev": "npm run wasm && vite",
+    "build": "npm run wasm && tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
-    "vite": "^5.4.10"
+    "vite": "^5.4.10",
+    "wasm-pack": "^0.13.1"
   }
 }

@@ -1,6 +1,6 @@
 import { all, type Model } from './models';
-import { buildStages, sheet, type Step } from './paper';
-import { fitView, PixelStage, type Camera } from './render';
+import type { Step } from './diagram';
+import { PaperCanvas, type Camera } from './engine';
 import { markDone } from './progress';
 import { kami } from './kami';
 import { esc, icons } from './icons';
@@ -19,10 +19,9 @@ const short = (text: string) => text.split(/(?<=\.)\s/)[0]!.replace(/\.$/, '');
 
 /** Renders the folding workspace for one model and returns a function that tears it down. */
 export function workspace(app: HTMLElement, model: Model): () => void {
-  const stages = buildStages(sheet(model.paper), model.steps);
-  const view = fitView(stages);
+  const steps = model.steps;
   const next = all[all.indexOf(model) + 1];
-  const last = stages.length - 1;
+  const last = steps.length - 1;
   const cam: Camera = { yaw: 0, pitch: 0 };
   let i = 0;
   let t = 0;
@@ -67,7 +66,7 @@ export function workspace(app: HTMLElement, model: Model): () => void {
           <input class="scrub" type="range" min="0" max="1000" value="0" aria-label="Fold progress" />
           <div class="finish" hidden></div>
           <ol class="step-list">
-            ${stages.map((s, k) => `<li><button data-k="${k}"><span class="num">${k + 1}</span><span>${esc(short(s.step.text))}</span></button></li>`).join('')}
+            ${steps.map((s, k) => `<li><button data-k="${k}"><span class="num">${k + 1}</span><span>${esc(short(s.text))}</span></button></li>`).join('')}
           </ol>
         </aside>
       </div>
@@ -93,17 +92,17 @@ export function workspace(app: HTMLElement, model: Model): () => void {
   const scrub = $<HTMLInputElement>('.scrub');
   const finish = $<HTMLElement>('.finish');
   const list = [...app.querySelectorAll<HTMLButtonElement>('.step-list button')];
-  const pixels = new PixelStage(canvas);
+  const paper = new PaperCanvas(canvas, model);
 
   const complete = () => i === last && t >= 1;
 
   function draw() {
-    const stage = stages[i]!;
-    pixels.draw(stage, t, view, model.whiteUp, cam, complete() ? model.dots : []);
-    canvas.setAttribute('aria-label', stage.step.text);
-    count.textContent = `Step ${i + 1} of ${stages.length}`;
-    instruction.textContent = stage.step.text;
-    const lesson = lessonFor[stage.step.kind];
+    const step = steps[i]!;
+    paper.draw(i, t, cam, complete());
+    canvas.setAttribute('aria-label', step.text);
+    count.textContent = `Step ${i + 1} of ${steps.length}`;
+    instruction.textContent = step.text;
+    const lesson = lessonFor[step.kind];
     symbol.hidden = lesson.slug === model.slug;
     symbol.href = `#/fold/${lesson.slug}`;
     symbol.textContent = `Uses the ${lesson.name} symbol`;
@@ -130,7 +129,7 @@ export function workspace(app: HTMLElement, model: Model): () => void {
     const dt = Math.min(50, now - then);
     then = now;
     if (playing) {
-      t = Math.min(1, t + dt / (stages[i]!.step.kind === 'crease' ? 1800 : 1300));
+      t = Math.min(1, t + dt / (steps[i]!.kind === 'crease' ? 1800 : 1300));
       playing = t < 1;
     }
     if (spinning) cam.yaw += dt * 0.0011;

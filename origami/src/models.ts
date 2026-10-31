@@ -1,5 +1,4 @@
-import { v, type Only, type Step, type Vec2 } from './paper';
-import type { Dot } from './render';
+import { v, type Dot, type Only, type Step, type Vec2 } from './diagram';
 
 export type Level = 'basics' | 'beginner' | 'intermediate' | 'advanced';
 
@@ -42,10 +41,10 @@ const basics: Model[] = [
         kind: 'valley',
         line: [v(0, 50), v(100, 50)],
         move: v(50, 100),
-        text: 'A dashed line is a valley fold. the paper folds toward you, so the crease sinks like a valley. bring the bottom edge up to the top.',
+        text: 'A dashed line is a valley fold. The paper folds toward you, so the crease sinks like a valley. Bring the bottom edge up to the top.',
       },
     ],
-    finish: 'The most common fold in origami. when a diagram just says "fold", it means this.',
+    finish: 'The most common fold in origami. When a diagram just says "fold", it means this.',
   },
   {
     slug: 'mountain-fold',
@@ -60,7 +59,7 @@ const basics: Model[] = [
         kind: 'mountain',
         line: [v(0, 50), v(100, 50)],
         move: v(50, 100),
-        text: 'A dash-dot line is a mountain fold. the paper folds away from you, behind the model, and the crease rises like a ridge. the hollow arrowhead means "behind".',
+        text: 'A dash-dot line is a mountain fold. The paper folds away from you, behind the model, and the crease rises like a ridge. The hollow arrowhead means "behind".',
       },
     ],
     finish: 'A mountain fold is just a valley fold seen from the other side.',
@@ -78,16 +77,16 @@ const basics: Model[] = [
         kind: 'crease',
         line: [v(0, 0), v(100, 100)],
         move: v(100, 0),
-        text: 'An arrow that comes back on itself means fold, make a sharp crease, then unfold. creases act as guides for later steps.',
+        text: 'An arrow that comes back on itself means fold, make a sharp crease, then unfold. Creases act as guides for later steps.',
       },
       {
         kind: 'crease',
         line: [v(100, 0), v(0, 100)],
         move: v(0, 0),
-        text: 'Do it again on the other diagonal. where creases cross is the exact center of the paper.',
+        text: 'Do it again on the other diagonal. Where creases cross is the exact center of the paper.',
       },
     ],
-    finish: 'Sharp creases make everything after them easier. run a fingernail along each one.',
+    finish: 'Sharp creases make everything after them easier. Run a fingernail along each one.',
   },
   {
     slug: 'turn-over',
@@ -109,7 +108,7 @@ const basics: Model[] = [
         text: 'A looping arrow means turn the whole model over, left to right, like a page in a book.',
       },
     ],
-    finish: 'The folded corner is now behind. turning over shows you the other side of every layer.',
+    finish: 'The folded corner is now behind. Turning over shows you the other side of every layer.',
   },
   {
     slug: 'rotate',
@@ -129,7 +128,7 @@ const basics: Model[] = [
       {
         kind: 'rotate',
         deg: 90,
-        text: 'A curved arrow around the model means rotate it flat on the table. here, a quarter turn clockwise.',
+        text: 'A curved arrow around the model means rotate it flat on the table. Here, a quarter turn clockwise.',
       },
     ],
     finish: 'Rotating never changes the paper, only your point of view. Diagrams rotate to keep the next fold easy to reach.',
@@ -156,7 +155,7 @@ const models: Model[] = [
         kind: 'valley',
         line: [v(0, 50), v(100, 50)],
         move: v(50, 0),
-        text: 'Start with the white side up and a corner pointing at you. fold the top corner down to the bottom corner.',
+        text: 'Start with the white side up and a corner pointing at you. Fold the top corner down to the bottom corner.',
       },
       {
         kind: 'valley',
@@ -175,7 +174,7 @@ const models: Model[] = [
         line: [v(35, 85), v(65, 85)],
         move: v(50, 100),
         only: topHalf,
-        text: 'Fold just the front layer of the bottom point up. this is the snout.',
+        text: 'Fold just the front layer of the bottom point up. This is the snout.',
       },
       {
         kind: 'mountain',
@@ -185,7 +184,7 @@ const models: Model[] = [
         text: 'Fold the back layer behind along the same line so the chin is flat.',
       },
     ],
-    finish: 'Draw on eyes and a nose. woof.',
+    finish: 'Draw on eyes and a nose. Woof.',
     dots: [
       { x: 39, y: 61, r: 2.6 },
       { x: 61, y: 61, r: 2.6 },
@@ -211,7 +210,7 @@ const models: Model[] = [
         kind: 'valley',
         line: [v(58.58, 50), v(70.71, 20.71)],
         move: v(100, 50),
-        text: 'Fold the right corner across so its tip touches the left edge. the top edge of the flap should end up level.',
+        text: 'Fold the right corner across so its tip touches the left edge. The top edge of the flap should end up level.',
       },
       {
         kind: 'valley',
@@ -224,7 +223,7 @@ const models: Model[] = [
         line: [v(29.29, 20.71), v(70.71, 20.71)],
         move: v(50, 0),
         only: bottomHalf,
-        text: 'Fold the front layer of the top point down. tuck it into the pocket of the flap if you like.',
+        text: 'Fold the front layer of the top point down. Tuck it into the pocket of the flap if you like.',
       },
       {
         kind: 'mountain',
@@ -234,7 +233,7 @@ const models: Model[] = [
         text: 'Fold the back layer down behind.',
       },
     ],
-    finish: 'Squeeze the sides to open the cup. it holds water for a minute or two.',
+    finish: 'Squeeze the sides to open the cup. It holds water for a minute or two.',
   },
   {
     slug: 'airplane',
@@ -249,7 +248,7 @@ const models: Model[] = [
         kind: 'crease',
         line: [v(42.5, 0), v(42.5, 110)],
         move: v(85, 55),
-        text: 'Use a letter-sized sheet. fold it in half lengthwise and unfold to mark the center.',
+        text: 'Use a letter-sized sheet. Fold it in half lengthwise and unfold to mark the center.',
       },
       {
         kind: 'valley',
@@ -267,7 +266,7 @@ const models: Model[] = [
         kind: 'valley',
         line: [v(42.5, 0), v(0, 102.6)],
         move: v(0, 60),
-        text: 'Fold the new left edge to the center crease. the nose gets sharper.',
+        text: 'Fold the new left edge to the center crease. The nose gets sharper.',
       },
       {
         kind: 'valley',
@@ -326,7 +325,7 @@ const models: Model[] = [
         kind: 'valley',
         line: [v(50, 50), v(25, 75)],
         move: v(0, 50),
-        text: 'Fold the left corner down to the bottom point. you have a diamond.',
+        text: 'Fold the left corner down to the bottom point. You have a diamond.',
       },
       {
         kind: 'valley',
@@ -347,7 +346,7 @@ const models: Model[] = [
         line: [v(57, 57), v(50, 75)],
         move: v(51, 60),
         only: { movedIn: 'right' },
-        text: 'Fold the tip of the right flap out at an angle. this is a horn.',
+        text: 'Fold the tip of the right flap out at an angle. This is a horn.',
       },
       {
         kind: 'valley',
@@ -368,7 +367,7 @@ const models: Model[] = [
         line: [v(25, 75), v(75, 75)],
         move: v(50, 80),
         only: { ...topHalf, ...body },
-        text: 'Fold that strip up again along the middle line. this is the brim.',
+        text: 'Fold that strip up again along the middle line. This is the brim.',
       },
       {
         kind: 'mountain',
@@ -378,7 +377,7 @@ const models: Model[] = [
         text: 'Fold the back point up behind (or tuck it inside).',
       },
     ],
-    finish: 'Open the bottom and it sits on your head if you started with a big sheet. newspaper works.',
+    finish: 'Open the bottom and it sits on your head if you started with a big sheet. Newspaper works.',
   },
   {
     slug: 'fortune-teller',
@@ -398,7 +397,7 @@ const models: Model[] = [
         kind: 'valley',
         line: [v(50, 100), v(0, 50)],
         move: v(0, 100),
-        text: 'Bottom left corner to the center. folding all four corners in is called a blintz.',
+        text: 'Bottom left corner to the center. Folding all four corners in is called a blintz.',
       },
       { kind: 'flip', text: 'Turn the model over.' },
       { kind: 'valley', line: [v(25, 25), v(75, 25)], move: v(50, 0), text: 'Blintz again: fold the top corner to the center.' },
