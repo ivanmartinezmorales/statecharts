@@ -44,14 +44,38 @@ header p { margin: 4px 0 20px; color: var(--muted); }
   line-height: 0;
 }
 
+/* The picture drifts slowly, as if seen through warm air. */
+.drift {
+  position: relative;
+  animation: drift 26s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes drift {
+  0% { transform: scale(1.07) translate(-1.4%, -0.9%); }
+  50% { transform: scale(1.09) translate(1.1%, 0.7%); }
+  100% { transform: scale(1.07) translate(0.5%, -1.2%); }
+}
+
 #scene {
+  display: block;
   width: 100%;
   height: auto;
   aspect-ratio: 3 / 2;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  cursor: crosshair;
-  touch-action: manipulation;
+}
+
+#glow {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drift { animation: none; }
 }
 
 .page { min-height: 7.5em; padding: 14px 2px 4px; }
