@@ -1,4 +1,4 @@
-import { v, type FaceInfo, type Step, type Vec2 } from './paper';
+import { v, type Only, type Step, type Vec2 } from './paper';
 import type { Dot } from './render';
 
 export type Level = 'basics' | 'beginner' | 'intermediate' | 'advanced';
@@ -132,14 +132,15 @@ const basics: Model[] = [
         text: 'A curved arrow around the model means rotate it flat on the table. here, a quarter turn clockwise.',
       },
     ],
-    finish: 'Rotating never changes the paper, only your point of view. diagrams rotate to keep the next fold easy to reach.',
+    finish: 'Rotating never changes the paper, only your point of view. Diagrams rotate to keep the next fold easy to reach.',
   },
 ];
 
 // Which half of the unfolded sheet a face came from; after the first fold this tells front layers from back ones.
-const topHalf = (f: FaceInfo) => f.c.y < 50;
-const bottomHalf = (f: FaceInfo) => f.c.y > 50;
-const body = (f: FaceInfo) => !f.movedIn('right') && !f.movedIn('left');
+const topHalf: Only = { half: 'top' };
+const bottomHalf: Only = { half: 'bottom' };
+// The helmet's body, leaving out the two side flaps.
+const body = { notMovedIn: ['right', 'left'] } as const;
 
 const models: Model[] = [
   {
@@ -284,14 +285,14 @@ const models: Model[] = [
         kind: 'valley',
         line: [v(42.5, 0), v(30, 110)],
         move: v(5, 105),
-        only: (f) => f.c.x < 42.5,
+        only: { half: 'left', at: 42.5 },
         text: 'Fold the front wing down so its top edge lines up with the bottom of the body.',
       },
       {
         kind: 'mountain',
         line: [v(42.5, 0), v(30, 110)],
         move: v(5, 105),
-        only: (f) => f.c.x > 42.5,
+        only: { half: 'right', at: 42.5 },
         text: 'Fold the back wing the same way, behind.',
       },
       { kind: 'rotate', deg: 90, text: 'Turn it on its side so it points the way it will fly.' },
@@ -331,49 +332,49 @@ const models: Model[] = [
         kind: 'valley',
         line: [v(50, 75), v(75, 75)],
         move: v(50, 95),
-        only: (f) => f.movedIn('right'),
+        only: { movedIn: 'right' },
         text: 'Fold the bottom point of the right flap up to the top.',
       },
       {
         kind: 'valley',
         line: [v(25, 75), v(50, 75)],
         move: v(50, 95),
-        only: (f) => f.movedIn('left'),
+        only: { movedIn: 'left' },
         text: 'Fold the bottom point of the left flap up to the top.',
       },
       {
         kind: 'valley',
         line: [v(57, 57), v(50, 75)],
         move: v(51, 60),
-        only: (f) => f.movedIn('right'),
+        only: { movedIn: 'right' },
         text: 'Fold the tip of the right flap out at an angle. this is a horn.',
       },
       {
         kind: 'valley',
         line: [v(43, 57), v(50, 75)],
         move: v(49, 60),
-        only: (f) => f.movedIn('left'),
+        only: { movedIn: 'left' },
         text: 'Fold the left tip out to make the second horn.',
       },
       {
         kind: 'valley',
         line: [v(37.5, 87.5), v(62.5, 87.5)],
         move: v(50, 100),
-        only: (f) => topHalf(f) && body(f),
+        only: { ...topHalf, ...body },
         text: 'Fold just the front layer of the bottom point up to the middle line.',
       },
       {
         kind: 'valley',
         line: [v(25, 75), v(75, 75)],
         move: v(50, 80),
-        only: (f) => topHalf(f) && body(f),
+        only: { ...topHalf, ...body },
         text: 'Fold that strip up again along the middle line. this is the brim.',
       },
       {
         kind: 'mountain',
         line: [v(25, 75), v(75, 75)],
         move: v(50, 90),
-        only: (f) => bottomHalf(f) && body(f),
+        only: { ...bottomHalf, ...body },
         text: 'Fold the back point up behind (or tuck it inside).',
       },
     ],
