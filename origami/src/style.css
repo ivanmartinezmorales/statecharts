@@ -1,11 +1,13 @@
 :root {
   --bg: #021608;
   --text: #33b863;
-  --muted: #217b41;
+  --muted: #2b9150;
   --accent: #3fe07a;
   --paper: #3fe07a;
   --paper-back: #eef3ea;
-  --line: color-mix(in srgb, var(--muted) 45%, transparent);
+  --line: color-mix(in srgb, var(--text) 18%, transparent);
+  --raised: color-mix(in srgb, var(--text) 8%, var(--bg));
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --sans: 'Geist', system-ui, sans-serif;
   --mono: 'Geist Mono', ui-monospace, monospace;
   color-scheme: dark;
@@ -23,9 +25,9 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font: 14px/1.65 var(--sans);
+  font: 14px/1.6 var(--sans);
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
-  transition: background 0.3s;
 }
 
 a {
@@ -35,16 +37,16 @@ a {
 
 a:hover {
   text-decoration: underline;
-  text-underline-offset: 3px;
+  text-underline-offset: 4px;
 }
 
 kbd {
-  font: 11px var(--mono);
+  font: 11px/16px var(--mono);
   border: 1px solid var(--line);
   border-bottom-width: 2px;
   border-radius: 4px;
-  padding: 0 5px;
-  color: var(--accent);
+  padding: 0 4px;
+  color: var(--text);
 }
 
 button {
@@ -58,26 +60,35 @@ button {
   outline-offset: 2px;
 }
 
+.icon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
 /* top bar */
 
 .bar {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(8px);
+  background: var(--bg);
   border-bottom: 1px solid var(--line);
 }
 
 .bar-row {
   max-width: 600px;
   margin: 0 auto;
-  padding: 10px 16px 6px;
+  padding: 12px 16px 8px;
   display: flex;
   align-items: center;
-  gap: 18px;
-  font-family: var(--mono);
-  font-size: 13px;
+  gap: 20px;
+  font: 13px var(--mono);
 }
 
 .logo {
@@ -87,7 +98,7 @@ button {
 
 .bar nav {
   display: flex;
-  gap: 14px;
+  gap: 16px;
   flex: 1;
 }
 
@@ -102,12 +113,12 @@ button {
 
 .count {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .themes {
   display: flex;
-  gap: 5px;
+  gap: 8px;
 }
 
 .themes button {
@@ -115,20 +126,28 @@ button {
   height: 12px;
   padding: 0;
   border: 1px solid var(--line);
-  border-radius: 3px;
+  border-radius: 4px;
   background: var(--swatch);
 }
 
 .themes button[aria-checked='true'] {
-  outline: 1px solid var(--accent);
+  outline: 1px solid var(--text);
   outline-offset: 2px;
 }
 
+.progress-row {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 16px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .progress {
-  max-width: 568px;
-  margin: 2px auto 0;
-  height: 3px;
-  background: color-mix(in srgb, var(--muted) 30%, transparent);
+  flex: 1;
+  height: 4px;
+  background: var(--raised);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -136,26 +155,20 @@ button {
 .progress .fill {
   height: 100%;
   background: var(--accent);
-  transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-origin: left;
+  transition: transform 400ms var(--ease);
 }
 
 .progress-label {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 3px 16px 7px;
-  font: 10px var(--mono);
-  letter-spacing: 0.08em;
+  font: 12px var(--mono);
   color: var(--muted);
-  text-align: right;
+  white-space: nowrap;
 }
 
 @media (max-width: 480px) {
   .bar-row {
     flex-wrap: wrap;
     row-gap: 8px;
-  }
-  .progress {
-    margin-inline: 16px;
   }
 }
 
@@ -164,7 +177,7 @@ button {
 main {
   max-width: 600px;
   margin: 0 auto;
-  padding: 20px 16px 80px;
+  padding: 24px 16px 80px;
 }
 
 .banner {
@@ -172,39 +185,44 @@ main {
   width: 100%;
   aspect-ratio: 64 / 20;
   image-rendering: pixelated;
-  margin-bottom: 20px;
+  border-radius: 4px;
+  margin-bottom: 24px;
 }
 
 .intro h1 {
-  font: 400 13px var(--mono);
+  font: 500 16px/24px var(--mono);
   color: var(--accent);
   margin: 0;
 }
 
 .intro .sub {
-  font: 12px var(--mono);
+  font: 12px/16px var(--mono);
   color: var(--muted);
-  margin: 0 0 12px;
+  margin: 4px 0 16px;
 }
 
 .intro p {
-  margin: 0 0 10px;
-}
-
-.intro.tight .sub {
-  margin-bottom: 16px;
+  margin: 0 0 12px;
 }
 
 section {
-  margin-top: 36px;
+  margin-top: 40px;
 }
 
+/* Section labels end in a valley-fold crease, the same dashes the diagrams use. */
 h2 {
-  font: 400 11px var(--mono);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: 12px/16px var(--mono);
   color: var(--muted);
-  margin: 0 0 10px;
+  margin: 0 0 8px;
+}
+
+h2::after {
+  content: '';
+  flex: 1;
+  border-top: 1px dashed var(--line);
 }
 
 .list {
@@ -217,9 +235,15 @@ h2 {
 .list li.soon {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
-  padding: 3px 0;
+  min-height: 32px;
+}
+
+.list .name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .list .meta {
@@ -228,24 +252,27 @@ h2 {
   text-align: right;
 }
 
-.list .soon {
+.list .soon .name {
   color: var(--muted);
-  opacity: 0.7;
 }
 
-.tick {
-  color: var(--accent);
-  font-size: 12px;
-  margin-left: 6px;
+.done {
+  color: var(--muted);
 }
 
 .tips {
   margin: 0;
-  padding-left: 18px;
+  padding-left: 20px;
+}
+
+.tips li + li {
+  margin-top: 4px;
 }
 
 .back {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font: 12px var(--mono);
   margin-bottom: 16px;
 }
@@ -254,22 +281,22 @@ h2 {
 
 .steps {
   display: flex;
-  gap: 3px;
-  margin-bottom: 10px;
+  gap: 4px;
+  margin-bottom: 12px;
 }
 
 .steps button {
   flex: 1;
-  height: 6px;
+  height: 4px;
   padding: 0;
   border: none;
   border-radius: 2px;
-  background: color-mix(in srgb, var(--muted) 35%, transparent);
-  transition: background 0.2s;
+  background: var(--raised);
+  transition: background-color 160ms var(--ease);
 }
 
 .steps button.past {
-  background: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 45%, var(--bg));
 }
 
 .steps button[aria-selected='true'] {
@@ -282,7 +309,7 @@ h2 {
   width: min(100%, 58vh);
   aspect-ratio: 1;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
@@ -308,32 +335,33 @@ h2 {
 }
 
 .view-controls button {
-  font: 11px var(--mono);
-  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  font: 12px/16px var(--mono);
+  background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: 3px;
-  padding: 2px 7px;
-  color: var(--accent);
+  border-radius: 4px;
+  padding: 4px 8px;
+  color: var(--text);
+  transition: background-color 160ms var(--ease), color 160ms var(--ease);
 }
 
 .view-controls button[aria-pressed='true'] {
-  background: var(--accent);
+  background: var(--text);
   color: var(--bg);
 }
 
 .view-controls button:disabled {
-  opacity: 0.4;
+  color: var(--muted);
   cursor: default;
 }
 
 .hint {
   position: absolute;
-  left: 10px;
+  left: 12px;
   bottom: 8px;
-  font: 10px var(--mono);
+  font: 12px var(--mono);
   color: var(--muted);
   pointer-events: none;
-  transition: opacity 0.4s;
+  transition: opacity 300ms var(--ease);
 }
 
 .stage.touched .hint {
@@ -341,14 +369,14 @@ h2 {
 }
 
 .step-text {
-  min-height: 4.8em;
-  margin: 14px 0 6px;
+  min-height: 72px;
+  margin: 16px 0 8px;
 }
 
 .step-text .num {
   font: 12px var(--mono);
   color: var(--muted);
-  margin-right: 10px;
+  margin-right: 8px;
 }
 
 .controls {
@@ -358,12 +386,25 @@ h2 {
 }
 
 .controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
   font: 12px var(--mono);
   background: transparent;
   border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 5px 10px;
-  color: var(--accent);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--text);
+  transition: background-color 160ms var(--ease), transform 120ms var(--ease);
+}
+
+.controls button:hover {
+  background: var(--raised);
+}
+
+.controls button:active {
+  transform: scale(0.97);
 }
 
 .controls button.play {
@@ -373,37 +414,35 @@ h2 {
   min-width: 96px;
 }
 
-.controls button:hover {
-  border-color: var(--accent);
-}
-
 .scrub {
   flex: 1;
   accent-color: var(--accent);
-  min-width: 60px;
+  min-width: 64px;
 }
 
 .keys {
-  font: 11px var(--mono);
+  font: 12px var(--mono);
   color: var(--muted);
   display: flex;
-  gap: 6px;
+  gap: 4px 8px;
   align-items: center;
   flex-wrap: wrap;
-  margin: 12px 0 0;
+  margin: 16px 0 0;
 }
 
-.keys kbd + kbd {
-  margin-left: -2px;
+.keys span {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
 }
 
 .finish {
-  margin-top: 22px;
-  padding: 14px 16px;
+  margin-top: 24px;
+  padding: 16px;
+  background: var(--raised);
   border: 1px solid var(--line);
-  border-left: 2px solid var(--accent);
-  border-radius: 4px;
-  animation: rise 0.4s ease-out;
+  border-radius: 12px;
+  animation: rise 360ms var(--ease);
 }
 
 .finish p {
@@ -417,7 +456,7 @@ h2 {
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
   }
 }
 
