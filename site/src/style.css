@@ -124,6 +124,14 @@ h3 { margin: 0 0 4px; font-size: 20px; color: var(--warm); }
 
 #map { width: 100%; height: auto; display: block; }
 
+/* The map is wider than the words: a story with forks needs room to spread out. */
+section.map {
+  width: min(1040px, calc(100vw - 32px));
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 #map .edge { fill: none; stroke: var(--line); stroke-width: 2; }
 #map .edge.next { stroke: var(--warm); stroke-dasharray: 5 4; }
 #map .arrow { fill: var(--line); }
