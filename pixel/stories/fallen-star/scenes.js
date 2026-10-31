@@ -200,6 +200,80 @@ const scenes = {
       G.sprite(160, 64, ['####', '...#', '..#.', '.#..', '####'], { '#': '#e9e3ff' });
     },
   },
+  pond: {
+    paint(P) {
+      nightSky(P, '#0b1238', '#2b3a78', 60, 100);
+      P.circle(170, 26, 12, '#fff6d6'); P.glow(170, 26, 40, '#e8f0ff', 0.5);
+      P.poly([[0, 76], [70, 62], [150, 72], [240, 60], [240, 100], [0, 100]], '#1c3540');
+      grass(P, 96, '#22483a', '#132a20');
+      P.ellipse(130, 124, 104, 26, '#14284e'); P.ellipse(130, 124, 96, 22, '#1d3a6e');
+      P.vgrad(34, 104, 192, 42, [[0, 'rgba(120,150,230,0.25)'], [1, 'rgba(10,20,60,0)']]);
+      P.ellipse(170, 116, 10, 4, '#fff1c8'); P.glow(170, 116, 34, '#cfe0ff', 0.5);
+      for (let i = 0; i < 6; i++) P.rect(150 + P.R() * 40, 120 + i * 3, 6 + P.R() * 10, 0.6, 'rgba(255,240,200,0.45)');
+      for (let i = 0; i < 9; i++) { const x = 30 + i * 4 + P.R() * 3; P.line([[x, 112], [x + 1, 76 + P.R() * 12]], '#2f5a3a', 1.2); P.ellipse(x + 1, 80 + P.R() * 10, 1.2, 3.6, '#6b4a2e'); }
+      S.lilyPad(P, 96, 120, 12); S.lilyPad(P, 132, 134, 10, true); S.lilyPad(P, 192, 130, 9, true); S.lilyPad(P, 78, 136, 8, true);
+      const frog = S.frog(P, 96, 114, 1);
+      const bear = K.bear(P, 214, 106, 0.95);
+      S.jar(P, 196, 104, 0, { moonWater: true });
+      const star = S.twinkle(P, 206, 80, 6, 0.3);
+      P.vignette(0.55);
+      return { frog, bear, star };
+    },
+    details(G, f) {
+      S.frogFace(G, f.frog); K.bearFace(G, f.bear); S.twinkleFace(G, f.star, 'happy');
+      for (const [x, y] of [[112, 108], [150, 128], [60, 120]]) G.set(x, y, '#e8f0ff');
+    },
+  },
+
+  sheep: {
+    paint(P) {
+      nightSky(P, '#0e0a34', '#3c3484', 90, 120);
+      const star = S.twinkle(P, 150, 18, 6, 0.8);
+      const flock = [[150, 120], [146, 104], [154, 89], [147, 74], [153, 59], [148, 44], [151, 30]];
+      for (const [i, [x, y]] of flock.entries()) S.sheep(P, x, y, 1.05, i % 2 === 1);
+      S.cloudBank(P, 120, [N.cloud, N.cloudHi], P.R, 16);
+      for (const [x, y] of [[196, 112], [214, 118], [32, 116]]) S.sheep(P, x, y, 0.9, x > 100);
+      S.boat(P, 70, 116, 0.85);
+      const bear = K.bear(P, 62, 104, 0.75);
+      S.jar(P, 84, 102, 5);
+      S.cloudBank(P, 146, [N.cloudHi, '#f4ecff'], P.R, 18);
+      P.vignette(0.45);
+      return { star, bear, flock };
+    },
+    details(G, f) {
+      S.twinkleFace(G, f.star, 'happy'); K.bearFace(G, f.bear, 'sleepy');
+      G.sprite(50, 82, ['###', '..#', '.#.', '#..', '###'], { '#': '#e9e3ff' });
+      G.sprite(44, 74, ['##', '.#', '#.', '##'], { '#': '#cfc8ff' });
+      for (const [x, y] of [[132, 30], [166, 40], [128, 64], [170, 80]]) G.twinkle(x, y, '#fffbe6');
+    },
+  },
+
+  morning: {
+    paint(P) {
+      room.bedroomWall(P, '#f0b48e', '#e2967c');
+      const w = room.bedroomWindow(P, [[0, '#ffd77e'], [0.6, '#ffc39a'], [1, '#ffe6c4']], ['#f4bcc6', '#e48aa8']);
+      P.circle(52, 60, 9, '#fff4cf'); P.glow(52, 60, 44, '#ffe2a0', 0.55);
+      for (const [cx, cy] of [[70, 34], [40, 26]]) { P.ellipse(cx, cy, 9, 3, 'rgba(255,255,255,0.85)'); P.ellipse(cx + 5, cy - 2, 5, 3, 'rgba(255,255,255,0.9)'); }
+      room.bookshelf(P, 196, 60);
+      room.floorboards(P, 118, '#c98a6a', '#9a6248');
+      P.ellipse(120, 146, 70, 10, '#5f9e8f'); P.ellipse(120, 146, 60, 7.5, '#7cbcae'); P.ellipse(120, 146, 48, 5, '#5f9e8f');
+      room.nightstand(P, 172, 98); room.lamp(P, 176, 80, false);
+      room.bed(P, 60, 86, 112, ['#a86aa8', '#c48ec8', '#7a4f8a']);
+      K.pajamas(P, 134, 76, 22, 22);
+      const girl = K.girlHead(P, 145, 68);
+      const bear = K.bear(P, 132, 84, 0.7);
+      P.ellipse(130, 86, 3, 5, K.C.pj, 0.7); P.ellipse(156, 84, 3, 5, K.C.pjShade, -0.7);
+      for (let i = 0; i < 26; i++) P.circle(118 + P.R() * 28, 66 + P.R() * 26, 0.6, '#fff6c8');
+      P.glow(132, 78, 26, '#fff0b0', 0.4);
+      P.beam([[w.wx, w.wy + 10], [w.wx + w.ww, w.wy], [230, 150], [60, 160]], '#ffd890', 0.28);
+      P.vignette(0.3, [80, 30, 20]);
+      return { girl, bear };
+    },
+    details(G, f) {
+      K.girlFace(G, f.girl, 'open'); K.bearFace(G, f.bear);
+      for (const [x, y] of [[122, 70], [119, 80], [126, 88], [136, 92]]) G.twinkle(x, y, '#fffbe6');
+    },
+  },
 };
 
 module.exports = { scenes };

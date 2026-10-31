@@ -1,5 +1,6 @@
 'use strict';
-// The night folk of "Pip and the Fallen Star": Twinkle, the old owl, the fireflies and the Moon Whale.
+// The night folk of "Pip and the Fallen Star": Twinkle, the old owl, the fireflies, the frog, the cloud sheep and
+// the Moon Whale.
 // Pip and the girl come from the bedtime cast.
 const K = require('../bedtime/cast');
 const { C } = K;
@@ -7,7 +8,9 @@ const { C } = K;
 const N = {
   star: '#ffe9a0', starDim: '#cdb87a', starHi: '#fffbe6',
   owl: '#8a6a4f', owlHi: '#b08b66', owlBelly: '#e3cfa6', owlEye: '#fff2c0', beak: '#e3a64a',
-  fly: '#e9ff9a', jar: 'rgba(210,240,255,0.35)', jarRim: '#c9d8e0',
+  fly: '#e9ff9a', jar: 'rgba(210,240,255,0.35)', jarRim: '#c9d8e0', moonWater: '#bfe8ff',
+  frog: '#5fae5a', frogHi: '#8fd27a', frogBelly: '#d8eeb0', lily: '#3f8a5a', lilyHi: '#5aa874', bloom: '#ffe0f0',
+  wool: '#f4f0ff', woolShade: '#cfc4ea', sheepFace: '#3a3046',
   whale: '#2f3f8f', whaleHi: '#4a5fb8', belly: '#b8c4f0', spot: '#bfe6ff',
   boat: '#f3eee2', boatShade: '#cfc6b4', cloud: '#c9b8e8', cloudHi: '#e8dcff', cloudShade: '#9a86c4',
 };
@@ -56,12 +59,44 @@ function owlFace(G, f, look = 'kind') {
 
 function firefly(P, x, y, glow = 9) { P.glow(x, y, glow, '#d8ff7a', 0.55); P.rect(x - 0.5, y - 0.5, 1.2, 1.2, N.fly); }
 
-function jar(P, cx, cy, flies = 5) {
-  P.glow(cx, cy, 34, '#d8ff7a', 0.55);
+// Pip's lantern: a jar of fireflies, or of glowing moon-water from the frog's pond.
+function jar(P, cx, cy, flies = 5, { moonWater = false } = {}) {
+  P.glow(cx, cy, 34, moonWater ? N.moonWater : '#d8ff7a', 0.55);
   P.rrect(cx - 6, cy - 8, 12, 16, 3, N.jar);
+  if (moonWater) { P.rrect(cx - 5, cy - 3, 10, 10, 2, 'rgba(190,232,255,0.8)'); P.rect(cx - 5, cy - 3, 10, 1, '#ffffff'); }
   P.rect(cx - 6.5, cy - 10, 13, 2.5, N.jarRim);
   P.line([[cx - 4, cy - 10], [cx, cy - 15], [cx + 4, cy - 10]], '#8a7a6a', 0.8);
-  for (let i = 0; i < flies; i++) P.rect(cx - 4 + P.R() * 8, cy - 6 + P.R() * 12, 1.2, 1.2, N.fly);
+  if (!moonWater) for (let i = 0; i < flies; i++) P.rect(cx - 4 + P.R() * 8, cy - 6 + P.R() * 12, 1.2, 1.2, N.fly);
+}
+
+function frog(P, cx, cy, s = 1) {
+  const e = (dx, dy, rx, ry, c) => P.ellipse(cx + dx * s, cy + dy * s, rx * s, ry * s, c);
+  e(-6, 4, 4, 2.4, N.frog); e(6, 4, 4, 2.4, N.frog);
+  e(0, 0, 8, 6, N.frog); e(0, 2, 5.5, 3.6, N.frogBelly); e(-2, -2, 4, 2.4, N.frogHi);
+  e(-4, -5.5, 3, 3, N.frog); e(4, -5.5, 3, 3, N.frog); e(-4, -5.8, 1.8, 1.8, '#ffffff'); e(4, -5.8, 1.8, 1.8, '#ffffff');
+  return { eyes: [[Math.round(cx - 4 * s), Math.round(cy - 6 * s)], [Math.round(cx + 4 * s), Math.round(cy - 6 * s)]], mouth: [Math.round(cx - 3 * s), Math.round(cy - 1 * s)] };
+}
+
+function frogFace(G, f) {
+  for (const [x, y] of f.eyes) G.set(x, y, '#1a2a1a');
+  const [mx, my] = f.mouth; for (let i = 0; i < 6; i++) G.set(mx + i, my + (i === 0 || i === 5 ? 0 : 1), '#2f5a2f');
+}
+
+function lilyPad(P, cx, cy, r, flower = false) {
+  P.ellipse(cx, cy, r, r * 0.4, N.lily);
+  P.ellipse(cx - r * 0.2, cy - r * 0.08, r * 0.7, r * 0.25, N.lilyHi);
+  P.poly([[cx, cy], [cx + r, cy - r * 0.15], [cx + r, cy + r * 0.15]], '#1c3a5a');
+  if (flower) { P.glow(cx, cy - 2, 16, '#ffd8f0', 0.6); for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + (i - 2) * 0.5; P.ellipse(cx + Math.cos(a) * 2, cy - 2 + Math.sin(a) * 2, 1.4, 2.6, N.bloom, a + Math.PI / 2); } P.circle(cx, cy - 2, 1, '#ffe9a0'); }
+}
+
+// A cloud sheep: a puff of wool with a dark face and little legs.
+function sheep(P, cx, cy, s = 1, flip = false) {
+  const d = flip ? -1 : 1, e = (dx, dy, rx, ry, c) => P.ellipse(cx + dx * s * d, cy + dy * s, rx * s, ry * s, c);
+  e(-4, 5, 1, 2.4, N.sheepFace); e(3, 5, 1, 2.4, N.sheepFace);
+  for (const [dx, dy, r] of [[-4, 0, 4], [0, -2, 4.5], [4, 0, 4], [0, 2, 4.5], [-2, -3, 3], [3, -3, 3]]) e(dx, dy, r, r, N.wool);
+  e(2, 2, 4, 2.5, N.woolShade); e(0, 0, 6, 3.8, N.wool);
+  e(7, -1, 2.8, 3.4, N.sheepFace); e(5.4, -3.2, 1.4, 0.8, N.sheepFace);
+  return { eye: [Math.round(cx + 7.6 * s * d), Math.round(cy - 1.6 * s)] };
 }
 
 function boat(P, cx, cy, s = 1) {
@@ -114,4 +149,4 @@ function notes(G, x, y, color) {
   G.sprite(x + 8, y - 6, ['.###', '.#.#', '.#.#', '##.#', '#.##'], { '#': color });
 }
 
-module.exports = { N, starPoints, twinkle, twinkleFace, owl, owlFace, firefly, jar, boat, cloudBank, whale, whaleFace, dandelion, notes };
+module.exports = { N, starPoints, twinkle, twinkleFace, owl, owlFace, firefly, jar, frog, frogFace, lilyPad, sheep, boat, cloudBank, whale, whaleFace, dandelion, notes };
