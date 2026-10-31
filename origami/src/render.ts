@@ -165,7 +165,8 @@ export class PixelStage {
   }
 
   draw(stage: Stage, t: number, view: View, whiteUp: boolean, cam: Camera, dots: readonly Dot[] = []) {
-    const css = getComputedStyle(document.documentElement);
+    // Read from the canvas so a tile or workspace can set its own --paper.
+    const css = getComputedStyle(this.canvas);
     const color = (name: string) => css.getPropertyValue(name).trim();
     const scale = PIXELS / view.size;
     // Orbit around the paper itself, so it spins in place instead of swinging around the frame.
@@ -177,7 +178,7 @@ export class PixelStage {
       return v((pivot.x + r.x * s - view.minX) * scale, (pivot.y + r.y * s - view.minY) * scale);
     };
 
-    this.ctx.putImageData(this.background(color('--bg'), color('--muted')), 0, 0);
+    this.ctx.putImageData(this.background(color('--stage'), color('--stage-dot')), 0, 0);
 
     const p = pose(stage, t);
     const g = this.paper;
@@ -212,7 +213,7 @@ export class PixelStage {
     if (t < 0.34) {
       const k = this.ink;
       k.clearRect(0, 0, PIXELS, PIXELS);
-      k.strokeStyle = k.fillStyle = color('--accent');
+      k.strokeStyle = k.fillStyle = color('--ink');
       k.lineWidth = 1;
       notation(k, stage, view, project);
       crisp(k, false);
@@ -222,21 +223,20 @@ export class PixelStage {
     }
   }
 
-  /** Dithered mosaic, cached per theme. */
-  private background(bg: string, muted: string): ImageData {
-    const key = bg + muted;
+  /** A folding mat: dot grid every 8 pixels over a faint grain, cached per color pair. */
+  private background(stage: string, dot: string): ImageData {
+    const key = stage + dot;
     if (this.backdrop?.key === key) return this.backdrop.img;
     const img = this.ctx.createImageData(PIXELS, PIXELS);
-    const [br, bgG, bb] = rgb(bg);
-    const [mr, mg, mb] = rgb(muted);
+    const [sr, sg, sb] = rgb(stage);
+    const [dr, dg, db] = rgb(dot);
     for (let y = 0; y < PIXELS; y++) {
       for (let x = 0; x < PIXELS; x++) {
-        const wave = 0.5 + 0.5 * Math.sin(x / 9 + y / 6);
-        const m = (4 + (hash(x, y) * 0.7 + wave * 0.3) * 16) / 100;
+        const m = x % 8 === 4 && y % 8 === 4 ? 1 : hash(x, y) * 0.12;
         const i = (y * PIXELS + x) * 4;
-        img.data[i] = br + (mr - br) * m;
-        img.data[i + 1] = bgG + (mg - bgG) * m;
-        img.data[i + 2] = bb + (mb - bb) * m;
+        img.data[i] = sr + (dr - sr) * m;
+        img.data[i + 1] = sg + (dg - sg) * m;
+        img.data[i + 2] = sb + (db - sb) * m;
         img.data[i + 3] = 255;
       }
     }
