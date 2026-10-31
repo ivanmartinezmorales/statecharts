@@ -6,7 +6,7 @@ const path = require('path');
 module.exports = {
   id: 'fallen-star',
   title: 'Pip and the Fallen Star',
-  tagline: 'A bedtime story with a fork in the path. Choose what Pip does next. However you go, Twinkle gets home and Pip gets to sleep.',
+  tagline: 'A bedtime story with forks in the path. Choose what Pip does next. There are two endings, and on every path Twinkle gets home.',
   chart: path.join(__dirname, '..', '..', 'pixel', 'stories', 'fallen-star', 'model', 'chart'),
   scenes: require('../../pixel/stories/fallen-star/scenes').scenes,
   states: {
@@ -24,6 +24,11 @@ module.exports = {
       scene: 'owl',
       text: 'The old owl blinked her big round eyes. "Stars ride home on the Moon Whale," she hooted, "but she only comes when someone sings." Then she taught them her lullaby, soft as feathers.',
       alt: 'An owl on a branch in front of a huge full moon sings to the bear and the little star below.',
+    },
+    'The moon pond': {
+      scene: 'pond',
+      text: 'A frog sat on a lily pad in the middle of the pond. "Need a light?" he croaked, and dipped Pip\'s jar into the moon\'s reflection. It came up full of glowing moon-water.',
+      alt: 'A frog on a lily pad in a moonlit pond with glowing water lilies. The bear holds a jar of glowing water, the little star beside him.',
     },
     'Firefly meadow': {
       scene: 'meadow',
@@ -50,11 +55,21 @@ module.exports = {
       text: 'Pip floated home on a dandelion seed and snuggled back into bed. Outside the window, one little star winked goodnight. Sweet dreams.',
       alt: 'Back in the bedroom, the girl and her bear sleep while a bright new star twinkles in the window.',
     },
+    'The cloud sheep': {
+      scene: 'sheep',
+      text: 'Fluffy cloud sheep came bouncing by. "We can reach the sky!" they bleated, and climbed onto each other\'s backs, higher and higher, until the top sheep set Twinkle back in her place. Pip started counting them. One... two... three...',
+      alt: 'Cloud sheep stand on each other\'s backs in a tall tower, lifting the little star into the sky. The bear dozes in his paper boat.',
+    },
+    'Stardust morning': {
+      scene: 'morning',
+      text: 'When the girl woke up, Pip was tucked in beside her, covered in sparkly stardust. She never found out how it got there. But Pip knows, and so does Twinkle.',
+      alt: 'Morning sun fills the bedroom. The girl sits up in bed holding her bear, who sparkles with stardust.',
+    },
   },
   rules: {
     LightInTheClouds: 'Pip never goes up into the dark clouds without a light',
     SongForTheWhale: 'The Moon Whale only comes when someone sings',
-    StarHomeBeforeDreams: 'Twinkle is always home before Pip falls asleep',
-    NoDeadlock: 'The story never gets stuck: every path reaches the end',
+    StarHomeBeforeTheEnd: 'Twinkle always gets home before the story ends',
+    NoDeadlock: 'The story never gets stuck: every path reaches an ending',
   },
 };

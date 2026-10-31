@@ -1,7 +1,7 @@
 # FallenStar
 
-TLC reached 13 states and 14 steps. The chart draws 8 states and 8 arrows.
-The chart does not draw 2 steps that stay in one chart state.
+TLC reached 31 states and 38 steps. The chart draws 11 states and 13 arrows.
+The chart does not draw 8 steps that stay in one chart state.
 
 ## Rules that hold
-TypeOK, LightInTheClouds, SongForTheWhale, StarHomeBeforeDreams, NoDeadlock
+TypeOK, LightInTheClouds, SongForTheWhale, StarHomeBeforeTheEnd, NoDeadlock
