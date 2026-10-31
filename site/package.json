@@ -5,6 +5,7 @@
   "description": "Pixel-art stories you can step through, built from checked statecharts.",
   "scripts": {
     "build": "node build.js",
-    "serve": "node serve.js"
+    "serve": "node serve.js",
+    "deploy": "node build.js && vercel deploy dist --prod --yes --project pip-and-the-fallen-star --scope ivanmartinez-8194s-projects"
   }
 }

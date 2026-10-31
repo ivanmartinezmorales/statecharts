@@ -13,6 +13,16 @@ cd ../site && npm run build && npm run serve
 
 Then open http://localhost:5310. `dist/` is a static site: deploy it anywhere that serves files.
 
+## Deploy
+
+```bash
+npm run deploy
+```
+
+Builds `dist/` and uploads it as the production deployment of the `pip-and-the-fallen-star` Vercel project, live at
+https://pip-and-the-fallen-star.vercel.app. It needs the Vercel CLI, logged in to an account that can deploy to
+`ivanmartinez-8194s-projects`. Vercel only serves the files; the build runs here.
+
 ## How it fits together
 
 | path | what it is |
