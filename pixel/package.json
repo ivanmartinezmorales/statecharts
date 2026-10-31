@@ -1,0 +1,9 @@
+{
+  "name": "statecharts-pixel",
+  "private": true,
+  "license": "MIT",
+  "description": "Paints story scenes with light and texture, then cuts them down to real pixels.",
+  "type": "commonjs",
+  "scripts": { "bedtime": "node stories/bedtime/render.js" },
+  "dependencies": { "@napi-rs/canvas": "1.0.13" }
+}
