@@ -1,0 +1,37 @@
+---
+title: "Pip and the Fallen Star"
+---
+stateDiagram-v2
+  state "Legend" as legend {
+    lg0: home
+    lg1: garden
+    lg2: sky
+  }
+  class lg0 purple
+  class lg1 teal
+  class lg2 yellow
+  s0: A star falls
+  s1: The fallen star
+  s2: The old owl
+  s3: Firefly meadow
+  s4: The cloud sea
+  s5: The Moon Whale
+  s6: Home in the sky
+  s7: Sweet dreams
+  [*] --> s0
+  s0 --> s1: Pip slips out the window
+  s1 --> s2: ask the old owl for help
+  s1 --> s3: follow the fireflies
+  s2 --> s3: follow the fireflies
+  s3 --> s4: climb the cloud stairs
+  s4 --> s5: sing to the moon
+  s5 --> s6: the whale lifts Twinkle home
+  s6 --> s7: float home on a dandelion
+  class s0 purple
+  class s1 teal
+  class s2 teal
+  class s3 teal
+  class s4 yellow
+  class s5 yellow
+  class s6 yellow
+  class s7 purple
