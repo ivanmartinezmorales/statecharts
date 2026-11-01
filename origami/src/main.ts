@@ -39,7 +39,7 @@ function renderBar() {
 
 let teardown: (() => void) | null = null;
 
-function route() {
+function render() {
   teardown?.();
   const [, page, arg, step] = location.hash.split('/');
   const model = page === 'fold' ? all.find((m) => m.slug === arg) : undefined;
@@ -56,6 +56,19 @@ function route() {
   document.title = model ? `${model.name} · Origami` : page === 'drawer' ? 'Your paper drawer · Origami' : 'Origami: learn to fold, step by step';
   renderBar();
   window.scrollTo(0, 0);
+}
+
+/** Swap pages with a short crossfade where the browser can, and with a plain cut where it cannot or the visitor asked for less motion. */
+function route() {
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!document.startViewTransition || calm || document.visibilityState !== 'visible' || !app.firstElementChild) return render();
+  const swap = document.startViewTransition(render);
+  // A newer navigation skips the one in flight; that is expected, not an error.
+  const skipped = (error: unknown) => {
+    if (!(error instanceof DOMException && error.name === 'AbortError')) throw error;
+  };
+  swap.ready.catch(skipped);
+  swap.finished.catch(skipped);
 }
 
 window.addEventListener('hashchange', route);
