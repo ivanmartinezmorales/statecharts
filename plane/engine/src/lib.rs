@@ -3,8 +3,10 @@
 // reads the picture, the glow and the bloom straight out of that memory. Buffers are reused frame to frame, and there
 // are no dependencies.
 
+mod exterior;
 mod gfx;
 mod pal;
+mod planform;
 
 use gfx::Canvas;
 use std::cell::RefCell;
@@ -105,6 +107,8 @@ pub extern "C" fn frame(t: f32) {
         // light is summed during a frame, so every frame starts dark
         c.light.fill([0.0; 3]);
         match p.scene {
+            0 => exterior::draw(c, &p),
+            2 => planform::draw(c, &p),
             _ => c.clear(pal::NIGHT),
         }
         c.fade(pal::NIGHT, p.fade);
