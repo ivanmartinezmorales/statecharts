@@ -80,24 +80,43 @@ h1 {
 .rail__bar { height: 3px; background: rgba(255, 255, 255, 0.08); }
 .rail__bar div { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--magenta), var(--gold)); transform-origin: 0 50%; transition: transform 0.3s ease; }
 
-/* the deep dive */
+/* a deep visit: the cards step away, the diorama takes the screen, and this panel sits where the card was */
+html.is-deep { overflow: hidden; }
+html.is-deep main { opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+html.is-deep .stage { cursor: grab; }
+html.is-deep .stage:active { cursor: grabbing; }
 .deep {
-  position: fixed; z-index: 4; top: 0; right: 0; bottom: 0; width: min(560px, 100vw); overflow: auto;
-  padding: 32px 28px 48px; background: rgba(18, 7, 46, 0.97); border-left: 3px solid var(--magenta);
-  box-shadow: -10px 0 0 rgba(106, 38, 200, 0.5); animation: deep-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: fixed; z-index: 4; left: clamp(16px, 4vw, 56px); top: 88px; bottom: 24px; width: min(440px, calc(100vw - 32px));
+  display: flex; flex-direction: column; gap: 14px; overflow: auto;
+  padding: 22px 22px 18px; background: var(--card); border: 3px solid var(--cyan); border-radius: 4px;
+  box-shadow: 6px 6px 0 var(--magenta), 12px 12px 0 var(--violet); backdrop-filter: blur(4px);
+  animation: deep-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-@keyframes deep-in { from { transform: translateX(40px); opacity: 0; } }
-.deep h2 { font: 700 34px/1.05 var(--pixel); margin: 0 48px 16px 0; color: var(--gold); text-shadow: 3px 3px 0 #8a1a6a; }
-.deep p { color: var(--soft); margin: 0 0 14px; }
-.deep h4 { font: 400 13px var(--tiny); color: var(--cyan); margin: 24px 0 10px; text-transform: uppercase; }
-.deep__close { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; font: 700 18px var(--pixel); color: #1a0838; background: var(--gold); border: 0; border-radius: 3px; cursor: pointer; box-shadow: 0 3px 0 #b8622a; }
-.deep__steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 10px; }
-.deep__steps li { counter-increment: s; display: grid; grid-template-columns: 30px 1fr; gap: 10px; color: var(--soft); font-size: 15px; }
-.deep__steps li::before { content: counter(s); display: grid; place-items: center; width: 26px; height: 26px; font: 700 13px var(--pixel); color: #1a0838; background: var(--cyan); border-radius: 2px; }
-.deep__facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; }
-.deep__facts div { padding: 10px 12px; background: rgba(106, 38, 200, 0.22); border: 1px solid rgba(182, 163, 232, 0.25); border-top: 3px solid var(--magenta); }
+@keyframes deep-in { from { transform: translateX(-30px); opacity: 0; } }
+.deep__head { position: relative; padding-right: 52px; }
+.deep h2 { font: 700 clamp(26px, 2.4vw, 34px)/1.05 var(--pixel); margin: 0; color: var(--gold); text-shadow: 3px 3px 0 #8a1a6a; }
+.deep__close { position: absolute; top: 0; right: 0; width: 40px; height: 40px; font: 700 18px var(--pixel); color: #1a0838; background: var(--gold); border: 0; border-radius: 3px; cursor: pointer; box-shadow: 0 3px 0 #b8622a; }
+.deep__step { animation: step-in 0.4s ease; flex: 1 0 auto; }
+@keyframes step-in { from { opacity: 0; transform: translateY(6px); } }
+.deep__count { font: 400 12px var(--tiny); color: var(--cyan); margin: 0 0 8px; text-transform: uppercase; }
+.deep__text { margin: 0; color: var(--soft); font-size: 17px; line-height: 1.6; }
+.deep__nav { display: flex; align-items: center; gap: 10px; }
+.deep__nav > button {
+  font: 700 15px var(--pixel); color: #1a0838; background: linear-gradient(180deg, #fff2a8, var(--gold)); border: 0; border-radius: 3px;
+  padding: 9px 12px; cursor: pointer; box-shadow: 0 3px 0 #b8622a; white-space: nowrap;
+}
+.deep__nav > button:disabled { opacity: 0.35; cursor: default; }
+.deep__nav > button:not(:disabled):active { transform: translateY(2px); box-shadow: 0 1px 0 #b8622a; }
+.deep__dots { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; flex: 1; justify-content: center; }
+.deep__dots button { width: 10px; height: 10px; padding: 0; border: 0; border-radius: 1px; background: rgba(182, 163, 232, 0.35); cursor: pointer; }
+.deep__dots button[data-on] { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+.deep__more summary { font: 400 12px var(--tiny); color: var(--gold); cursor: pointer; text-transform: uppercase; }
+.deep__facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 0; }
+.deep__facts div { padding: 8px 10px; background: rgba(106, 38, 200, 0.22); border: 1px solid rgba(182, 163, 232, 0.25); border-top: 3px solid var(--magenta); }
 .deep__facts dt { font: 400 11px var(--tiny); color: var(--muted); margin-bottom: 4px; }
-.deep__facts dd { margin: 0; font: 700 16px var(--text); color: var(--ink); }
+.deep__facts dd { margin: 0; font: 700 15px var(--text); color: var(--ink); }
+.deep__hint { margin: 0; font: 400 11px var(--tiny); color: var(--muted); }
+.deep__nav > button:focus-visible, .deep__dots button:focus-visible, .deep__more summary:focus-visible { outline: 3px solid var(--cyan); outline-offset: 2px; }
 
 /* phones: the card at the bottom, the picture above */
 @media (max-aspect-ratio: 1/1) {
@@ -107,7 +126,12 @@ h1 {
   .card__facts { display: none; }
   .card__intro { display: none; }
   .cover { background: rgba(21, 9, 54, 0.72); padding: 18px; border: 3px solid var(--gold); }
-  .deep { width: 100vw; top: auto; height: 86vh; border-left: 0; border-top: 3px solid var(--magenta); box-shadow: 0 -8px 0 rgba(106, 38, 200, 0.5); animation-name: sheet-in; }
+  .deep { left: 12px; right: 12px; width: auto; top: auto; bottom: 12px; max-height: 42vh; overflow: hidden; padding: 16px 14px 12px; gap: 10px; box-shadow: 4px 4px 0 var(--magenta), 8px 8px 0 var(--violet); animation-name: sheet-in; }
+  /* the text scrolls; the step buttons stay in reach */
+  .deep__step { flex: 1 1 auto; min-height: 0; overflow: auto; }
+  .deep__more { display: none; }
+  .deep__text { font-size: 15px; }
+  .deep__hint { display: none; }
   .deep__facts { grid-template-columns: 1fr; }
 }
 @keyframes sheet-in { from { transform: translateY(40px); opacity: 0; } }

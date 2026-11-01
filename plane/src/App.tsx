@@ -1,18 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { frameAt } from './camera'
+import { between, frameAt } from './camera'
 import { createCompositor } from './compositor'
-import { loadEngine } from './engine'
-import { CHAPTERS, COVER, STOPS, type Stop } from './tour'
+import { loadEngine, type V3 } from './engine'
+import { CHAPTERS, COVER, deepTour, STOPS, type DeepStep, type Stop, type View } from './tour'
 
-// The page: one fixed canvas the engine draws on, and a column of cards that scrolls over it. Where you are in the
-// scroll picks the frame; a card's "Go deeper" opens the full explanation beside the picture.
+// The page: one fixed canvas where the engine draws a row of dioramas, and a column of cards that scrolls over it.
+// Where you are in the scroll picks the camera. "Go deeper" opens a full-screen visit of that diorama: step through
+// the explanation while the camera moves around the part, drag to turn it, scroll to come closer.
 
-const VIEWS = [COVER, ...STOPS]
+const VIEWS: View[] = [COVER, ...STOPS]
+const STEP_MS = 1100
 
-/** Framebuffer pixels per screen pixel: chunky enough to read as pixel art, fine enough for the detail. */
-function pixelScale() {
-  return innerWidth < 700 ? 3 : innerHeight > 1100 ? 4 : 3
-}
+/** Framebuffer pixels per CSS pixel: small enough for detail, big enough to read as pixel art. Raised if the
+ *  device cannot keep up. */
+let scale = 1.5
+
+type Deep = { stop: Stop; steps: DeepStep[]; i: number }
+type Move = { from: View; to: View; t0: number }
 
 export function App() {
   const gpu = useRef<HTMLCanvasElement>(null)
@@ -20,16 +24,20 @@ export function App() {
   const glow = useRef<HTMLCanvasElement>(null)
   const bloom = useRef<HTMLCanvasElement>(null)
   const [at, setAt] = useState(0)
-  const [deep, setDeep] = useState<Stop | null>(null)
   const [mode, setMode] = useState('')
+  const [deep, setDeep] = useState<Deep | null>(null)
+  // the render loop reads these without re-rendering
+  const deepRef = useRef<Deep | null>(null)
+  const move = useRef<Move | null>(null)
+  const orbit = useRef({ yaw: 0, pitch: 0, zoom: 1 })
 
   useEffect(() => {
-    let raf = 0, last = 0, alive = true
+    let raf = 0, last = 0, alive = true, slow = 0
     let unlisten = () => {}
     const still = matchMedia('(prefers-reduced-motion: reduce)').matches
     ;(async () => {
       const engine = await loadEngine()
-      const size = () => engine.resize(Math.ceil(innerWidth / pixelScale()), Math.ceil(innerHeight / pixelScale()))
+      const size = () => engine.resize(Math.ceil(innerWidth / scale), Math.ceil(innerHeight / scale))
       size()
       const comp = await createCompositor(gpu.current!, [pic.current!, glow.current!, bloom.current!], engine)
       if (!alive) return
@@ -37,28 +45,104 @@ export function App() {
       const onResize = () => { size(); comp.resize() }
       addEventListener('resize', onResize)
       unlisten = () => removeEventListener('resize', onResize)
+      const origins: V3[] = engine.origins
       const tick = (now: number) => {
         raf = requestAnimationFrame(tick)
         // a hidden or zero-height window has nothing to draw
         if (now - last < 32 || !innerHeight) return
         last = now
-        const p = scrollY / innerHeight
         const { w, h } = engine.size()
-        engine.draw(frameAt(VIEWS, p, w, h, still), still ? 2 : now / 1000)
+        const d = deepRef.current
+        let f
+        if (d) {
+          const m = move.current
+          const u = m ? Math.min(1, (now - m.t0) / STEP_MS) : 1
+          const e = u * u * (3 - 2 * u)
+          const here = d.steps[d.i].view
+          f = between(m ? m.from : here, m ? m.to : here, m ? e : 0, origins, w, h, still)
+          const o = orbit.current
+          f.yaw += o.yaw
+          f.pitch = Math.max(-0.2, Math.min(1.45, f.pitch + o.pitch))
+          f.dist *= o.zoom
+        } else {
+          f = frameAt(VIEWS, scrollY / innerHeight, origins, w, h, still)
+        }
+        const t0 = performance.now()
+        engine.draw(f, still ? 2 : now / 1000)
         comp.present()
-        setAt((was) => { const i = Math.round(p - 0.2); return was === i ? was : i })
+        // if frames take too long, draw fewer, bigger pixels
+        slow = performance.now() - t0 > 26 ? slow + 1 : Math.max(0, slow - 1)
+        if (slow > 20 && scale < 3) { scale += 0.75; slow = 0; onResize() }
+        if (!d) setAt((was) => { const i = Math.round(scrollY / innerHeight - 0.2); return was === i ? was : i })
       }
       raf = requestAnimationFrame(tick)
     })()
     return () => { alive = false; cancelAnimationFrame(raf); unlisten() }
   }, [])
 
+  const go = (d: Deep, from: View) => {
+    move.current = { from, to: d.steps[d.i].view, t0: performance.now() }
+    deepRef.current = d
+    setDeep(d)
+  }
+  const open = (s: Stop) => {
+    orbit.current = { yaw: 0, pitch: 0, zoom: 1 }
+    document.documentElement.classList.add('is-deep')
+    go({ stop: s, steps: deepTour(s), i: 0 }, s)
+  }
+  const step = (by: number) => {
+    const d = deepRef.current
+    if (!d) return
+    const i = Math.max(0, Math.min(d.steps.length - 1, d.i + by))
+    if (i !== d.i) go({ ...d, i }, d.steps[d.i].view)
+  }
+  const close = () => {
+    deepRef.current = null
+    move.current = null
+    document.documentElement.classList.remove('is-deep')
+    setDeep(null)
+  }
+
+  // in a deep visit: arrows step, Escape leaves, dragging turns the diorama, the wheel comes closer
+  const open_ = deep !== null
   useEffect(() => {
-    if (!deep) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setDeep(null)
+    if (!open_) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') step(1)
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') step(-1)
+    }
+    let drag: { x: number; y: number; yaw: number; pitch: number } | null = null
+    const down = (e: PointerEvent) => {
+      if ((e.target as HTMLElement).closest('.deep, .rail')) return
+      drag = { x: e.clientX, y: e.clientY, yaw: orbit.current.yaw, pitch: orbit.current.pitch }
+    }
+    const moveP = (e: PointerEvent) => {
+      if (!drag) return
+      orbit.current.yaw = drag.yaw - (e.clientX - drag.x) * 0.006
+      orbit.current.pitch = drag.pitch + (e.clientY - drag.y) * 0.004
+    }
+    const up = () => { drag = null }
+    const wheel = (e: WheelEvent) => {
+      if ((e.target as HTMLElement).closest('.deep')) return
+      e.preventDefault()
+      orbit.current.zoom = Math.max(0.35, Math.min(2.5, orbit.current.zoom * Math.exp(e.deltaY * 0.0015)))
+    }
     addEventListener('keydown', onKey)
-    return () => removeEventListener('keydown', onKey)
-  }, [deep])
+    addEventListener('pointerdown', down)
+    addEventListener('pointermove', moveP)
+    addEventListener('pointerup', up)
+    addEventListener('pointercancel', up)
+    addEventListener('wheel', wheel, { passive: false })
+    return () => {
+      removeEventListener('keydown', onKey)
+      removeEventListener('pointerdown', down)
+      removeEventListener('pointermove', moveP)
+      removeEventListener('pointerup', up)
+      removeEventListener('pointercancel', up)
+      removeEventListener('wheel', wheel)
+    }
+  }, [open_])
 
   const firsts = useMemo(() => new Set(CHAPTERS.map((c) => STOPS.findIndex((s) => s.chapter === c))), [])
   const current = STOPS[Math.max(0, Math.min(STOPS.length - 1, at - 1))]
@@ -79,7 +163,7 @@ export function App() {
             const first = STOPS.findIndex((s) => s.chapter === c)
             return (
               <li key={c.id}>
-                <button type="button" data-on={at > 0 && current.chapter === c ? '' : undefined} onClick={() => goTo(first)}>{c.title}</button>
+                <button type="button" data-on={at > 0 && current.chapter === c ? '' : undefined} onClick={() => { close(); goTo(first) }}>{c.title}</button>
               </li>
             )
           })}
@@ -87,12 +171,12 @@ export function App() {
         <div className="rail__bar"><div style={{ transform: `scaleX(${Math.max(0, at) / STOPS.length})` }} /></div>
       </nav>
 
-      <main>
+      <main {...(deep ? { inert: '' } : {})}>
         <section className="stop stop--cover">
           <header className="cover">
             <p className="kicker">How things work</p>
             <h1>The 787 Dreamliner</h1>
-            <p className="lede">A scrolling tour of a long-range jet, from the flight deck to the fuel tanks: how it flies, how its engines burn, how every system moves power around the airplane. Scroll down to board.</p>
+            <p className="lede">A tour of a long-range jet as a row of pixel dioramas, from the flight deck to the fuel tanks: how it flies, how its engines burn, how every system moves power around the airplane. Scroll down to board; open any stop to walk around it.</p>
             <p className="cover__meta">{STOPS.length} stops in {CHAPTERS.length} chapters{mode && ` · rendered in WASM, ${mode}`}</p>
           </header>
         </section>
@@ -112,7 +196,7 @@ export function App() {
               <ul className="card__facts">
                 {s.entry.facts.slice(0, 3).map(([k, v]) => <li key={k}><span>{k}</span>{v}</li>)}
               </ul>
-              <button type="button" className="card__deeper" onClick={() => setDeep(s)}>Go deeper</button>
+              <button type="button" className="card__deeper" onClick={() => open(s)}>Go deeper</button>
             </article>
           </section>
         ))}
@@ -126,23 +210,32 @@ export function App() {
       </main>
 
       {deep && (
-        <aside className="deep" aria-label={deep.entry.title}>
-          <button type="button" className="deep__close" onClick={() => setDeep(null)} aria-label="Close" autoFocus>✕</button>
-          <p className="kicker">{deep.chapter.title}</p>
-          <h2>{deep.entry.title}</h2>
-          {deep.entry.body.map((para) => <p key={para}>{para}</p>)}
-          {deep.entry.steps && (
-            <section>
-              <h4>Step by step</h4>
-              <ol className="deep__steps">{deep.entry.steps.map((st) => <li key={st}>{st}</li>)}</ol>
-            </section>
-          )}
-          <section>
-            <h4>By the numbers</h4>
-            <dl className="deep__facts">
-              {deep.entry.facts.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
-            </dl>
+        <aside className="deep" role="dialog" aria-modal="true" aria-label={deep.stop.entry.title}>
+          <header className="deep__head">
+            <p className="kicker">{deep.stop.chapter.title} · Go deeper</p>
+            <h2>{deep.stop.entry.title}</h2>
+            <button type="button" className="deep__close" onClick={close} aria-label="Back to the tour" autoFocus>✕</button>
+          </header>
+          <section className="deep__step" key={deep.i}>
+            <p className="deep__count">{deep.stop.entry.steps?.length ? 'Step' : 'Part'} {deep.i + 1} of {deep.steps.length}</p>
+            <p className="deep__text">{deep.steps[deep.i].text}</p>
           </section>
+          <nav className="deep__nav" aria-label="Steps">
+            <button type="button" onClick={() => step(-1)} disabled={deep.i === 0}>← Back</button>
+            <ol className="deep__dots">
+              {deep.steps.map((_, i) => (
+                <li key={i}><button type="button" aria-label={`Step ${i + 1}`} data-on={i === deep.i ? '' : undefined} onClick={() => step(i - deep.i)} /></li>
+              ))}
+            </ol>
+            <button type="button" onClick={() => step(1)} disabled={deep.i === deep.steps.length - 1}>Next →</button>
+          </nav>
+          <details className="deep__more">
+            <summary>By the numbers</summary>
+            <dl className="deep__facts">
+              {deep.stop.entry.facts.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
+            </dl>
+          </details>
+          <p className="deep__hint">Drag to turn the diorama · scroll over it to come closer · ← → to step</p>
         </aside>
       )}
     </>
