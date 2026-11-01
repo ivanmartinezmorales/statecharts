@@ -1,12 +1,15 @@
 import { v, type Dot, type Only, type Step, type Vec2 } from './diagram';
 import { advanced, techniques } from './advanced';
+import { menagerie } from './menagerie';
 
 export type Level = 'basics' | 'beginner' | 'intermediate' | 'advanced';
+export type Topic = 'technique' | 'animal' | 'flower' | 'thing';
 
 export interface Model {
   readonly slug: string;
   readonly name: string;
   readonly level: Level;
+  readonly topic: Topic;
   readonly about: string;
   /** Paper color the model is shown in. */
   readonly color: string;
@@ -33,6 +36,7 @@ const basics: Model[] = [
     slug: 'valley-fold',
     name: 'Valley fold',
     level: 'basics',
+    topic: 'technique',
     about: 'Dashed line, fold toward you',
     color: '#2d5bd0',
     paper: square,
@@ -51,6 +55,7 @@ const basics: Model[] = [
     slug: 'mountain-fold',
     name: 'Mountain fold',
     level: 'basics',
+    topic: 'technique',
     about: 'Dash-dot line, fold away',
     color: '#1f8a84',
     paper: square,
@@ -69,6 +74,7 @@ const basics: Model[] = [
     slug: 'crease',
     name: 'Fold and unfold',
     level: 'basics',
+    topic: 'technique',
     about: 'Pre-crease a guide line',
     color: '#edb51c',
     paper: square,
@@ -93,6 +99,7 @@ const basics: Model[] = [
     slug: 'turn-over',
     name: 'Turn over',
     level: 'basics',
+    topic: 'technique',
     about: 'Flip the whole model',
     color: '#7b3f8c',
     paper: square,
@@ -115,6 +122,7 @@ const basics: Model[] = [
     slug: 'rotate',
     name: 'Rotate',
     level: 'basics',
+    topic: 'technique',
     about: 'Spin it flat on the table',
     color: '#e98ba8',
     paper: square,
@@ -147,6 +155,7 @@ const models: Model[] = [
     slug: 'dog',
     name: 'Dog face',
     level: 'beginner',
+    topic: 'animal',
     about: 'Your first real model',
     color: '#b98a55',
     paper: diamond,
@@ -196,6 +205,7 @@ const models: Model[] = [
     slug: 'cup',
     name: 'Paper cup',
     level: 'beginner',
+    topic: 'thing',
     about: 'Holds water, for a while',
     color: '#1f8a84',
     paper: diamond,
@@ -240,6 +250,7 @@ const models: Model[] = [
     slug: 'airplane',
     name: 'Paper airplane',
     level: 'beginner',
+    topic: 'thing',
     about: 'The classic dart',
     color: '#2d5bd0',
     paper: letter,
@@ -303,6 +314,7 @@ const models: Model[] = [
     slug: 'heart',
     name: 'Heart',
     level: 'beginner',
+    topic: 'thing',
     about: 'Six folds, no cuts',
     color: '#d9412b',
     paper: diamond,
@@ -351,6 +363,7 @@ const models: Model[] = [
     slug: 'tulip',
     name: 'Tulip',
     level: 'beginner',
+    topic: 'flower',
     about: 'Three folds, two petals',
     color: '#e98ba8',
     paper: diamond,
@@ -381,6 +394,7 @@ const models: Model[] = [
     slug: 'envelope',
     name: 'Envelope',
     level: 'beginner',
+    topic: 'thing',
     about: 'Four folds, holds a note',
     color: '#edb51c',
     paper: diamond,
@@ -417,6 +431,7 @@ const models: Model[] = [
     slug: 'house',
     name: 'House',
     level: 'beginner',
+    topic: 'thing',
     about: 'Cupboard folds and a roof',
     color: '#b98a55',
     paper: square,
@@ -465,6 +480,7 @@ const models: Model[] = [
     slug: 'penguin',
     name: 'Penguin',
     level: 'beginner',
+    topic: 'animal',
     about: 'Two-tone, with a beak',
     color: '#232a33',
     paper: diamond,
@@ -519,6 +535,7 @@ const models: Model[] = [
     slug: 'kabuto',
     name: 'Samurai helmet',
     level: 'intermediate',
+    topic: 'thing',
     about: 'Layers, flaps and horns',
     color: '#d9412b',
     paper: diamond,
@@ -600,6 +617,7 @@ const models: Model[] = [
     slug: 'fortune-teller',
     name: 'Fortune teller',
     level: 'intermediate',
+    topic: 'thing',
     about: 'Built on a blintz base',
     color: '#edb51c',
     paper: square,
@@ -631,6 +649,7 @@ const models: Model[] = [
     slug: 'whale',
     name: 'Whale',
     level: 'intermediate',
+    topic: 'animal',
     about: 'Kite base, folded in half',
     color: '#2d5bd0',
     paper: diamond,
@@ -681,6 +700,7 @@ const models: Model[] = [
     slug: 'cicada',
     name: 'Cicada',
     level: 'intermediate',
+    topic: 'animal',
     about: 'Wings, layers and a tucked body',
     color: '#1f8a84',
     paper: diamond,
@@ -755,7 +775,7 @@ const models: Model[] = [
   },
 ];
 
-export const all: readonly Model[] = [...basics, ...techniques, ...models, ...advanced];
+export const all: readonly Model[] = [...basics, ...techniques, ...models, ...menagerie, ...advanced];
 
 export const upcoming: readonly Upcoming[] = [
   { name: 'Lily', about: 'Frog base and curling' },
