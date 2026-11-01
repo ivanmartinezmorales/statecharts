@@ -1,6 +1,6 @@
-// Scroll position to engine frame. Each stop holds still for most of its screen, then the last stretch moves to the
-// next: around the same diorama the camera glides and orbits; to another diorama it rises above the row of plinths,
-// flies over and comes down to the new one, like walking a museum's tables.
+// Scroll position to engine frame, in isometric: the camera always looks down at the same 2:1 angle, from one of the
+// four diagonals. Each stop holds still for most of its screen, then the last stretch moves to the next: around the
+// same diorama it pans and zooms; to another diorama it zooms out over the row of plinths, pans across and zooms in.
 
 import type { Frame, V3 } from './engine'
 import type { View } from './tour'
@@ -15,8 +15,13 @@ export function freeRegion(w: number, h: number): Region {
   return { x: w * 0.36, y: h * 0.06, w: w * 0.62, h: h * 0.9 }
 }
 
-// the engine's lens: a long one, 0.62 radians top to bottom
-const FOCAL = 0.5 / Math.tan(0.31)
+// how many world units fill the frame's height at a given distance, as the engine sizes it
+const FOCAL = 1.561
+/** 2:1 isometric: the pitch at which a square's diagonal steps two pixels across for one down. */
+export const ISO_PITCH = Math.atan(0.5)
+const QUARTER = Math.PI / 2
+/** The nearest of the four isometric diagonals to a yaw. */
+export const isoYaw = (yaw: number) => Math.PI / 4 + Math.round((yaw - Math.PI / 4) / QUARTER) * QUARTER
 
 type Pose = { t: V3; yaw: number; pitch: number; dist: number }
 
@@ -26,7 +31,7 @@ const ease = (u: number) => u * u * (3 - 2 * u)
 /** A stop's pose in the world, before fitting it to the free region. */
 function pose(v: View, origins: V3[]): Pose {
   const o = origins[v.set]
-  return { t: [o[0] + v.look.x, o[1] + v.look.y, o[2] + v.look.z], yaw: v.look.yaw, pitch: v.look.pitch, dist: v.look.dist }
+  return { t: [o[0] + v.look.x, o[1] + v.look.y, o[2] + v.look.z], yaw: isoYaw(v.look.yaw), pitch: ISO_PITCH, dist: v.look.dist }
 }
 
 /** Moves the camera so the target sits in the middle of the free region, and back enough that the view fits it. */
@@ -75,12 +80,12 @@ export function between(a: View, b: View, s: number, origins: V3[], fw: number, 
   let dyaw = pb.yaw - pa.yaw
   dyaw -= Math.round(dyaw / (2 * Math.PI)) * 2 * Math.PI
   const base = Math.exp(lerp(Math.log(pa.dist), Math.log(pb.dist), s))
-  // over a long hop, rise high enough to see both tables; on a short one, ease out a little and back in
+  // over a long hop, zoom out far enough to see both tables; on a short one, ease out a little and back in
   const lift = still ? 0 : Math.max(base * 0.25, travel * 0.8 - base) * arc
   const p: Pose = {
     t: [0, 1, 2].map((k) => lerp(pa.t[k], pb.t[k], s)) as V3,
     yaw: pa.yaw + dyaw * s,
-    pitch: lerp(pa.pitch, pb.pitch, s) + (still ? 0 : arc * Math.min(0.35, travel / 600)),
+    pitch: ISO_PITCH,
     dist: base + lift,
   }
   const near = s < 0.5 ? a : b
