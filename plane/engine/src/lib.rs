@@ -8,6 +8,7 @@ mod d3;
 mod flightdeck;
 mod gfx;
 mod pal;
+mod parts;
 mod plane3d;
 mod runway;
 mod screens;
@@ -53,12 +54,16 @@ type Draw = fn(&mut Canvas, &mut Frame, V3, Option<&Params>);
 type Focus = fn(i32) -> u8;
 
 /// The dioramas: where each stands in the world (a row along x), how to draw it, and its focusable parts.
-const SETS: [(V3, Draw, Focus); 5] = [
+const SETS: [(V3, Draw, Focus); 9] = [
     (v(0.0, 0.0, 0.0), runway::draw, runway::focus_id),
     (v(200.0, 0.0, 0.0), xray::draw, xray::focus_id),
     (v(400.0, 0.0, 0.0), flightdeck::draw, flightdeck::focus_id),
     (v(600.0, 0.0, 0.0), turbofan::draw, turbofan::focus_id),
     (v(800.0, 0.0, 0.0), cabin::draw, cabin::focus_id),
+    (v(1000.0, 0.0, 0.0), parts::draw_engine, parts::focus_id),
+    (v(1200.0, 0.0, 0.0), parts::draw_gear, parts::focus_id),
+    (v(1400.0, 0.0, 0.0), parts::draw_battery, parts::focus_id),
+    (v(1600.0, 0.0, 0.0), parts::draw_wing, parts::focus_id),
 ];
 pub const ORIGINS: [V3; SETS.len()] = {
     let mut o = [v(0.0, 0.0, 0.0); SETS.len()];
