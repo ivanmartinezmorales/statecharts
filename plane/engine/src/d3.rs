@@ -1,4 +1,4 @@
-// The diorama renderer: meshes built from boxes, solids of revolution, extrusions and tubes, drawn by a small
+// The diorama renderer, isometric: meshes built from boxes, solids of revolution, extrusions and tubes, drawn by a small
 // software rasterizer with a depth buffer. Each face is lit by one warm key light and shaded through its material's
 // color ramp with ordered dithering, so it stays pixel art; parts get dark outlines where they meet, the focused part
 // a gold one; and a tilt-shift blur at the top and bottom of the frame makes it read as a miniature.
@@ -273,7 +273,9 @@ impl Mesh {
     }
 }
 
-/// The camera orbits a target: yaw around it, pitch above it, at a distance.
+/// The isometric camera: an orthographic view down at a fixed angle, so parallel edges stay parallel and boxes draw
+/// with the classic 2:1 pixel stair-steps. It turns about a target (yaw) and zooms by `dist`, which sets how many
+/// world units fit in the frame, as a lens at that distance would.
 #[derive(Clone, Copy)]
 pub struct Cam {
     pub yaw: f32,
@@ -282,7 +284,8 @@ pub struct Cam {
     right: V3,
     up: V3,
     fwd: V3,
-    f: f32,
+    /// screen pixels per world unit
+    k: f32,
     hw: f32,
     hh: f32,
 }
@@ -292,30 +295,31 @@ impl Cam {
         let (sp, cp) = pitch.sin_cos();
         let (sy, cy) = yaw.sin_cos();
         let back = v(cp * sy, sp, cp * cy);
-        let eye = target.add(back.mul(dist));
+        // far back, so every depth is positive; orthographic, so the distance does not change the size
+        let eye = target.add(back.mul(4000.0));
         let fwd = back.mul(-1.0);
         let right = fwd.cross(v(0.0, 1.0, 0.0)).norm();
         let up = right.cross(fwd);
-        // a long lens, like looking at a model on a table: little perspective
-        let fov = 0.62f32;
-        let f = h as f32 / 2.0 / (fov / 2.0).tan();
-        Cam { yaw, pitch, eye, right, up, fwd, f, hw: w as f32 / 2.0, hh: h as f32 / 2.0 }
+        let k = h as f32 * 1.561 / dist.max(1.0);
+        let mut cam = Cam { yaw, pitch, eye, right, up, fwd, k, hw: w as f32 / 2.0, hh: h as f32 / 2.0 };
+        // keep the world's origin on a whole pixel, so edges do not shimmer as the camera pans
+        if let Some((x, y, _)) = cam.project(v(0.0, 0.0, 0.0)) {
+            cam.hw -= x - x.round();
+            cam.hh -= y - y.round();
+        }
+        cam
     }
     pub fn eye(&self) -> V3 {
         self.eye
     }
-    /// A world point on screen: pixel x, pixel y and depth, or None behind the camera.
+    /// A world point on screen: pixel x, pixel y and depth.
     pub fn project(&self, p: V3) -> Option<(f32, f32, f32)> {
         let d = p.sub(self.eye);
-        let z = d.dot(self.fwd);
-        if z < 0.5 {
-            return None;
-        }
-        Some((self.hw + d.dot(self.right) * self.f / z, self.hh - d.dot(self.up) * self.f / z, z))
+        Some((self.hw + d.dot(self.right) * self.k, self.hh - d.dot(self.up) * self.k, d.dot(self.fwd)))
     }
-    /// How many screen pixels one world unit covers at a point.
-    pub fn scale_at(&self, p: V3) -> f32 {
-        self.f / p.sub(self.eye).dot(self.fwd).max(0.5)
+    /// How many screen pixels one world unit covers: the same everywhere in an isometric view.
+    pub fn scale_at(&self, _p: V3) -> f32 {
+        self.k
     }
 }
 

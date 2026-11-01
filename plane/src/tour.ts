@@ -1,6 +1,6 @@
 // The tour, stop by stop: for each entry of each chapter, which diorama the camera visits and how it looks at it.
-// A look is a target point in the diorama's own coordinates, and the camera's yaw (around), pitch (above) and
-// distance. `tour` lists the parts a "Go deeper" visit steps through, when there are several worth pointing at.
+// A look is a target point in the diorama's own coordinates, the side to look from (yaw, settled on the nearest
+// isometric diagonal), a pitch (kept for reference; isometric fixes it) and a distance, which sets the zoom. `tour` lists the parts a "Go deeper" visit steps through, when there are several worth pointing at.
 
 import { airplane } from './content/airplane'
 import { avionics } from './content/avionics'

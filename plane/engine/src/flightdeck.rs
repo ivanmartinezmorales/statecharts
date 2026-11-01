@@ -173,7 +173,7 @@ fn build() -> Parts {
     // the nose shell, cut down to a tub so the deck is a dollhouse
     let mut shell = Mesh::new();
     // only the lower part, a tub around the floor, so it never stands between the camera and the crew's view
-    shell.lathe(-14.0, 14.0, 20.0, 20.0, 19.0, 19.0, 24, PI * 1.12, PI * 1.88, SHELL);
+    shell.lathe(-14.0, 14.0, 20.0, 20.0, 19.0, 19.0, 24, PI * 0.6, PI * 1.4, SHELL);
     let mut sh = Mesh::new();
     sh.put(&shell, &Xf::at(v(0.0, 16.0, 0.0)).yaw(PI / 2.0));
     out.push((2, sh));

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { between, frameAt } from './camera'
+import { between, frameAt, isoYaw } from './camera'
 import { createCompositor } from './compositor'
 import { loadEngine, type V3 } from './engine'
 import { CHAPTERS, COVER, deepTour, STOPS, type DeepStep, type Stop, type View } from './tour'
 
 // The page: one fixed canvas where the engine draws a row of dioramas, and a column of cards that scrolls over it.
 // Where you are in the scroll picks the camera. "Go deeper" opens a full-screen visit of that diorama: step through
-// the explanation while the camera moves around the part, drag to turn it, scroll to come closer.
+// the explanation while the camera moves around the part, drag to turn it a quarter at a time, scroll to come closer.
 
 const VIEWS: View[] = [COVER, ...STOPS]
 const STEP_MS = 1100
@@ -29,7 +29,8 @@ export function App() {
   // the render loop reads these without re-rendering
   const deepRef = useRef<Deep | null>(null)
   const move = useRef<Move | null>(null)
-  const orbit = useRef({ yaw: 0, pitch: 0, zoom: 1 })
+  // the turn eases toward `goal`, which settles on a quarter turn when you let go
+  const orbit = useRef({ yaw: 0, goal: 0, zoom: 1 })
 
   useEffect(() => {
     let raf = 0, last = 0, alive = true, slow = 0
@@ -61,8 +62,8 @@ export function App() {
           const here = d.steps[d.i].view
           f = between(m ? m.from : here, m ? m.to : here, m ? e : 0, origins, w, h, still)
           const o = orbit.current
+          o.yaw += (o.goal - o.yaw) * (still ? 1 : 0.25)
           f.yaw += o.yaw
-          f.pitch = Math.max(-0.2, Math.min(1.45, f.pitch + o.pitch))
           f.dist *= o.zoom
         } else {
           f = frameAt(VIEWS, scrollY / innerHeight, origins, w, h, still)
@@ -86,7 +87,7 @@ export function App() {
     setDeep(d)
   }
   const open = (s: Stop) => {
-    orbit.current = { yaw: 0, pitch: 0, zoom: 1 }
+    orbit.current = { yaw: 0, goal: 0, zoom: 1 }
     document.documentElement.classList.add('is-deep')
     go({ stop: s, steps: deepTour(s), i: 0 }, s)
   }
@@ -112,17 +113,22 @@ export function App() {
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') step(1)
       if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') step(-1)
     }
-    let drag: { x: number; y: number; yaw: number; pitch: number } | null = null
+    let drag: { x: number; goal: number } | null = null
     const down = (e: PointerEvent) => {
       if ((e.target as HTMLElement).closest('.deep, .rail')) return
-      drag = { x: e.clientX, y: e.clientY, yaw: orbit.current.yaw, pitch: orbit.current.pitch }
+      drag = { x: e.clientX, goal: orbit.current.goal }
     }
     const moveP = (e: PointerEvent) => {
       if (!drag) return
-      orbit.current.yaw = drag.yaw - (e.clientX - drag.x) * 0.006
-      orbit.current.pitch = drag.pitch + (e.clientY - drag.y) * 0.004
+      orbit.current.goal = drag.goal - (e.clientX - drag.x) * 0.008
     }
-    const up = () => { drag = null }
+    // let go and it settles on the nearest isometric diagonal
+    const up = () => {
+      if (!drag) return
+      drag = null
+      const o = orbit.current
+      o.goal = isoYaw(o.goal + Math.PI / 4) - Math.PI / 4
+    }
     const wheel = (e: WheelEvent) => {
       if ((e.target as HTMLElement).closest('.deep')) return
       e.preventDefault()
@@ -235,7 +241,7 @@ export function App() {
               {deep.stop.entry.facts.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
             </dl>
           </details>
-          <p className="deep__hint">Drag to turn the diorama · scroll over it to come closer · ← → to step</p>
+          <p className="deep__hint">Drag to turn the diorama a quarter · scroll over it to zoom · ← → to step</p>
         </aside>
       )}
     </>
