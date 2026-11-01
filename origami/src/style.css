@@ -184,6 +184,10 @@ kbd {
   opacity: 1;
 }
 
+.station::after {
+  transition: opacity 240ms var(--ease), border-color 240ms var(--ease);
+}
+
 .station a {
   display: inline-flex;
   align-items: center;
@@ -204,6 +208,7 @@ kbd {
   border: 1.5px solid var(--ink-3);
   transform: rotate(45deg);
   margin: 0 2px;
+  transition: background-color 240ms var(--ease), border-color 240ms var(--ease);
 }
 
 .complete .node {
@@ -223,6 +228,7 @@ kbd {
 .station-name {
   font-size: 15px;
   color: var(--ink-2);
+  transition: color 240ms var(--ease);
 }
 
 .current .station-name {
