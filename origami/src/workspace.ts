@@ -5,6 +5,7 @@ import { done, markDone } from './progress';
 import { surprise } from './picker';
 import { kami } from './kami';
 import { esc, icons } from './icons';
+import { difficultyName, effort, pips, time } from './effort';
 
 const lessons: Record<Exclude<Step['kind'], 'reverse'>, { slug: string; name: string }> = {
   valley: { slug: 'valley-fold', name: 'valley fold' },
@@ -25,18 +26,32 @@ const lessonFor = (step: Step) =>
       : { slug: 'outside-reverse-fold', name: 'outside reverse fold' }
     : lessons[step.kind];
 
+/** What usually goes wrong with each kind of fold, and how to avoid it. */
+const tips: Record<Step['kind'], string> = {
+  valley: 'Line the edges or corners up exactly first, hold them with one hand, then press the crease flat from the middle outward.',
+  mountain: 'Easiest done as a valley fold from behind: turn the model over, fold toward you, and turn it back.',
+  crease: 'Make the crease sharp with a fingernail before you unfold. Later steps use it as a guide, so a soft crease drifts.',
+  flip: 'Turn it over like a page, left to right, so the top stays at the top.',
+  rotate: 'Turn the paper flat on the table, without flipping it. The arrows show which way.',
+  squash: 'Lift the flap upright first, open it a little, then press straight down on the spine so both sides spread evenly.',
+  petal: 'Pre-crease the edges to the center line first. Then lift the bottom point slowly and let those creases fold in on their own.',
+  collapse: 'Make every crease first, both directions. Then bring the points together gently, the paper wants to fall into shape.',
+  reverse: 'Pre-crease the line in both directions first. Open the layers slightly and push the point between them, along the crease.',
+};
+
 /** First sentence of a step, for the step list. */
 const short = (text: string) => text.split(/(?<=\.)\s/)[0]!.replace(/\.$/, '');
 
 /** Renders the folding workspace for one model and returns a function that tears it down. */
-export function workspace(app: HTMLElement, model: Model): () => void {
+export function workspace(app: HTMLElement, model: Model, start = 0): () => void {
   const steps = model.steps;
   const next = all[all.indexOf(model) + 1];
   const last = steps.length - 1;
   // Start at a three-quarter angle so the paper reads in 3D; Top view flattens it like a printed diagram.
   const cam: Camera = { yaw: -0.32, pitch: 0.48 };
-  let i = 0;
+  let i = Math.max(0, Math.min(last, start));
   let t = 0;
+  const e = effort(model);
   let playing = false;
   let auto = false;
   let held = 0;
@@ -49,7 +64,10 @@ export function workspace(app: HTMLElement, model: Model): () => void {
     <div class="workspace" style="--paper:${model.color}">
       <div class="ws-head">
         <a class="back" href="#/level/${model.level}">${icons.left}All models</a>
-        <h1>${esc(model.name)}</h1>
+        <div class="ws-title">
+          <h1>${esc(model.name)}</h1>
+          <p class="ws-meta">${steps.length} ${steps.length === 1 ? 'step' : 'steps'}, about ${time(e)}<span class="dot" aria-hidden="true"></span><span aria-hidden="true">${pips(e)}</span>${difficultyName[e.difficulty]}</p>
+        </div>
         <div class="swatches" role="radiogroup" aria-label="Paper color">
           ${kami
             .map(
@@ -72,6 +90,10 @@ export function workspace(app: HTMLElement, model: Model): () => void {
           <p class="step-count" aria-live="polite"></p>
           <p class="instruction"></p>
           <a class="symbol"></a>
+          <details class="tip">
+            <summary>Tip for this fold</summary>
+            <p></p>
+          </details>
           <div class="controls">
             <button class="prev" aria-label="Previous step">${icons.left}</button>
             <button class="play"></button>
@@ -101,6 +123,7 @@ export function workspace(app: HTMLElement, model: Model): () => void {
   const count = $<HTMLElement>('.step-count');
   const instruction = $<HTMLElement>('.instruction');
   const symbol = $<HTMLAnchorElement>('.symbol');
+  const tip = $<HTMLElement>('.tip p');
   const play = $<HTMLButtonElement>('.play');
   const spin = $<HTMLButtonElement>('.spin');
   const reset = $<HTMLButtonElement>('.reset');
@@ -122,6 +145,10 @@ export function workspace(app: HTMLElement, model: Model): () => void {
     symbol.hidden = lesson.slug === model.slug;
     symbol.href = `#/fold/${lesson.slug}`;
     symbol.textContent = `Uses the ${lesson.name} symbol`;
+    tip.textContent = tips[step.kind];
+    // Keep the address on the current step, so a reload or a shared link lands here.
+    const here = `#/fold/${model.slug}${i ? `/${i + 1}` : ''}`;
+    if (location.hash !== here) history.replaceState(null, '', here);
     scrub.value = String(Math.round(t * 1000));
     play.textContent = t >= 1 ? (i === last ? 'Fold again' : 'Next step') : playing ? 'Pause' : 'Fold';
     playAll.textContent = auto ? 'Stop playing' : 'Play every step';
@@ -133,20 +160,40 @@ export function workspace(app: HTMLElement, model: Model): () => void {
       if (k === i) b.setAttribute('aria-current', 'step');
       else b.removeAttribute('aria-current');
     });
+    // Built once per finish, so its buttons stay put while the model spins.
+    const shown = !finish.hidden;
     finish.hidden = !complete();
-    if (complete()) {
+    if (complete() && !shown) {
       if (markDone(model.slug)) celebrate(figure);
       const title = model.level === 'basics' ? 'Lesson complete' : `You folded a ${esc(model.name.toLowerCase())}`;
       const total = all.filter((m) => m.topic !== 'technique');
       const folded = total.filter((m) => done.has(m.slug)).length;
       finish.innerHTML = `<p class="finish-title">${title}</p><p>${esc(model.finish)}</p>
-        <p class="tally">${folded} of ${total.length} models folded</p>
+        <p class="tally">${folded} of ${total.length} models folded. <a href="#/drawer">See your drawer</a></p>
         <div class="finish-actions">${
           next ? `<a class="button primary" href="#/fold/${next.slug}">Next: ${esc(next.name)}</a>` : '<a class="button primary" href="#/">Back to all models</a>'
-        }<button class="button secondary surprise" type="button">Surprise me</button></div>`;
+        }<button class="button secondary surprise" type="button">Surprise me</button><button class="button secondary share" type="button">Share</button></div>
+        <p class="share-status" aria-live="polite"></p>`;
       finish.querySelector('.surprise')!.addEventListener('click', () => {
         location.hash = `#/fold/${surprise().slug}`;
       });
+      finish.querySelector('.share')!.addEventListener('click', () => void share());
+    }
+  }
+
+  async function share() {
+    const url = `${location.origin}${location.pathname}#/fold/${model.slug}`;
+    const text = model.level === 'basics' ? `I learned the ${model.name.toLowerCase()} on Origami.` : `I folded a ${model.name.toLowerCase()} on Origami. Try it:`;
+    const status = finish.querySelector<HTMLElement>('.share-status')!;
+    if (navigator.share) {
+      // Rejects when the share sheet is dismissed, which needs no message.
+      return navigator.share({ title: model.name, text, url }).catch(() => {});
+    }
+    try {
+      await navigator.clipboard.writeText(`${text} ${url}`);
+      status.textContent = 'Link copied';
+    } catch {
+      status.textContent = url;
     }
   }
 
@@ -275,6 +322,26 @@ export function workspace(app: HTMLElement, model: Model): () => void {
   canvas.addEventListener('pointerup', release);
   canvas.addEventListener('pointercancel', release);
   canvas.addEventListener('dblclick', topView);
+
+  // On a phone, swipe the instructions sideways to move between steps; the stage itself orbits.
+  let swipe: { x: number; y: number } | null = null;
+  const panel = $<HTMLElement>('.panel');
+  const onTouch = (ev: TouchEvent) => {
+    const p = ev.touches[0]!;
+    swipe = ev.touches.length === 1 && !(ev.target as Element).closest('input, .step-list') ? { x: p.clientX, y: p.clientY } : null;
+  };
+  panel.addEventListener('touchstart', onTouch, { passive: true });
+  panel.addEventListener('touchend', (ev) => {
+    if (!swipe) return;
+    const p = ev.changedTouches[0]!;
+    const dx = p.clientX - swipe.x;
+    const dy = p.clientY - swipe.y;
+    swipe = null;
+    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx > 0) go(t > 0 ? i : i - 1, 0);
+    else if (t < 1) animate();
+    else if (i < last) go(i + 1, 0);
+  });
 
   const onKey = (e: KeyboardEvent) => {
     if (e.target instanceof HTMLInputElement && e.key !== ' ') return;

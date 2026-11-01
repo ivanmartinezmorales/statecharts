@@ -1,6 +1,7 @@
 import { all, levels, upcoming, type Level, type Model, type Topic } from './models';
 import { PaperCanvas, type Camera } from './engine';
-import { done } from './progress';
+import { dismissWelcome, done, welcomed } from './progress';
+import { effort, pips, time } from './effort';
 import { esc } from './icons';
 
 export type Filter = { by: 'all' } | { by: 'level'; level: Level } | { by: 'topic'; topic: Topic };
@@ -25,6 +26,17 @@ export function nextUp(): Model {
   return all.find((m) => !done.has(m.slug)) ?? all[all.length - 1]!;
 }
 
+/** The same model for everyone on a given local day, stepping through the collection. */
+export function foldOfTheDay(date = new Date()): Model {
+  const pool = all.filter((m) => m.topic !== 'technique');
+  const day = Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86_400_000);
+  // Stride through the teaching order by a step coprime with its length, so neighbouring days land
+  // on different shelves and every model comes up once per cycle.
+  const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+  const stride = [7, 11, 13, 1].find((k) => gcd(k, pool.length) === 1)!;
+  return pool[(day * stride) % pool.length]!;
+}
+
 const folds = (m: Model) => `${m.steps.length} ${m.steps.length === 1 ? 'step' : 'steps'}`;
 
 /** How long each step takes in a tile's time-lapse. */
@@ -34,7 +46,7 @@ const LAPSE_MS = 240;
  * Draws a model's finished shape at a three-quarter angle. On hover it folds itself from a flat
  * sheet in a quick time-lapse, then keeps turning.
  */
-function preview(canvas: HTMLCanvasElement, model: Model) {
+export function preview(canvas: HTMLCanvasElement, model: Model) {
   const finished = new PaperCanvas(canvas, model, true);
   let whole: PaperCanvas | null = null;
   const last = model.steps.length - 1;
@@ -77,7 +89,7 @@ function tile(m: Model) {
       <canvas aria-hidden="true"></canvas>
       <span class="tile-label">
         <span class="tile-name">${esc(m.name)}</span>
-        <span class="tile-meta">${folded ? 'Folded' : folds(m)}</span>
+        <span class="tile-meta">${folded ? 'Folded' : `${folds(m)}, ${time(effort(m))}`}${pips(effort(m))}</span>
       </span>
     </a>`;
 }
@@ -103,17 +115,41 @@ function shelf(level: (typeof levels)[number]): string {
     </section>`;
 }
 
-function featured(m: Model) {
+const today = new Intl.DateTimeFormat(undefined, { month: 'long', day: 'numeric' });
+
+function featured(m: Model, day: Model) {
   const level = levels.find((l) => l.level === m.level)!.title.toLowerCase();
-  return `<section class="up-next" style="--paper:${m.color}">
-      <a class="up-next-art" href="#/fold/${m.slug}" data-slug="${m.slug}" aria-label="Fold ${esc(m.name)}"><canvas></canvas></a>
-      <div class="up-next-copy">
-        <p class="up-next-label">Up next for you</p>
-        <h2>${esc(m.name)}</h2>
-        <p>${esc(m.about)}. ${folds(m)}, ${level}.</p>
-        <a class="button primary" href="#/fold/${m.slug}">Start folding</a>
-      </div>
-    </section>`;
+  const same = m === day;
+  const label = same ? 'Up next for you, and today’s fold' : 'Up next for you';
+  return `<div class="features${same ? ' single' : ''}">
+      <section class="up-next" style="--paper:${m.color}">
+        <a class="up-next-art" href="#/fold/${m.slug}" data-slug="${m.slug}" aria-label="Fold ${esc(m.name)}"><canvas></canvas></a>
+        <div class="up-next-copy">
+          <p class="up-next-label">${label}</p>
+          <h2>${esc(m.name)}</h2>
+          <p>${esc(m.about)}. ${folds(m)}, about ${time(effort(m))}, ${level}.</p>
+          <a class="button primary" href="#/fold/${m.slug}">Start folding</a>
+        </div>
+      </section>
+      ${same ? '' : daily(day)}
+    </div>`;
+}
+
+function daily(m: Model) {
+  const folded = done.has(m.slug);
+  return `<a class="today" href="#/fold/${m.slug}" data-slug="${m.slug}" style="--paper:${m.color}">
+      <span class="today-label">Fold of the day<span class="today-date">${today.format(new Date())}</span></span>
+      <canvas aria-hidden="true"></canvas>
+      <span class="today-name">${esc(m.name)}</span>
+      <span class="tile-meta">${folded ? 'Already in your drawer, fold it again' : `${folds(m)}, ${time(effort(m))}`}${pips(effort(m))}</span>
+    </a>`;
+}
+
+function welcome() {
+  return `<aside class="welcome" aria-label="Welcome">
+      <p><strong>New to origami?</strong> Grab any square of paper. Watch each fold here, then copy it with your own hands. The symbols lessons take about a minute each.</p>
+      <button class="welcome-close button secondary" type="button">Got it</button>
+    </aside>`;
 }
 
 function shelves(filter: Filter) {
@@ -154,12 +190,17 @@ export function picker(app: HTMLElement, filter: Filter): () => void {
           <button class="button surprise" type="button">${left ? 'Surprise me' : 'Fold one again'}</button>
         </div>
       </header>
-      ${isAll ? featured(nextUp()) : ''}
+      ${isAll && !done.size && !welcomed() ? welcome() : ''}
+      ${isAll ? featured(nextUp(), foldOfTheDay()) : ''}
       ${shelves(filter)}
     </div>`;
 
   app.querySelector('.surprise')!.addEventListener('click', () => {
     location.hash = `#/fold/${surprise().slug}`;
+  });
+  app.querySelector('.welcome-close')?.addEventListener('click', (e) => {
+    dismissWelcome();
+    (e.currentTarget as HTMLElement).closest('.welcome')!.remove();
   });
 
   const motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;

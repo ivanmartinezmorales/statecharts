@@ -293,8 +293,19 @@ h2 {
   font-weight: 600;
 }
 
-.up-next {
+.features {
   margin-top: 32px;
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) minmax(220px, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.features.single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.up-next {
   display: grid;
   grid-template-columns: minmax(200px, 360px) minmax(0, 1fr);
   align-items: center;
@@ -328,6 +339,91 @@ h2 {
 .up-next p {
   color: var(--ink-2);
   margin: 0 0 24px;
+}
+
+.today {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  text-decoration: none;
+}
+
+.today canvas {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  margin: 8px auto;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  image-rendering: pixelated;
+}
+
+.today-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 15px;
+  color: var(--ink-3);
+}
+
+.today-date {
+  color: var(--ink-2);
+}
+
+.today-name {
+  font: 500 24px/1.15 var(--display);
+}
+
+.today:hover .today-name {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.welcome {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px 24px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1.5px dashed var(--ink-3);
+}
+
+.welcome p {
+  flex: 1;
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.welcome strong {
+  color: var(--ink);
+}
+
+.welcome .button {
+  flex: none;
+  height: 40px;
+}
+
+.pips {
+  display: inline-flex;
+  gap: 5px;
+  margin-left: auto;
+  padding: 0 2px;
+}
+
+.pip {
+  width: 6px;
+  height: 6px;
+  border: 1.5px solid var(--ink-3);
+  transform: rotate(45deg);
+}
+
+.pip.on {
+  background: var(--ink-2);
+  border-color: var(--ink-2);
 }
 
 .shelf {
@@ -387,6 +483,9 @@ a.tile:hover .tile-name {
 }
 
 .tile-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 14px;
   color: var(--ink-3);
 }
@@ -401,6 +500,98 @@ a.tile:hover .tile-name {
   height: 32px;
   background: linear-gradient(to bottom left, var(--bg) 50%, var(--paper) 50%);
   border-bottom-left-radius: 4px;
+}
+
+/* drawer */
+
+.drawer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  font-size: 15px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 160ms var(--ease);
+}
+
+.drawer-link:hover,
+.drawer-link[aria-current] {
+  background: var(--surface);
+}
+
+/* A little drawer front with its pull. */
+.drawer-icon {
+  position: relative;
+  width: 14px;
+  height: 11px;
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+}
+
+.drawer-icon::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: 3px;
+  height: 1.5px;
+  background: currentColor;
+}
+
+.drawer-count {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.drawer .grid {
+  margin-top: 32px;
+}
+
+.drawer-next {
+  margin: 32px 0 0;
+  color: var(--ink-2);
+}
+
+.drawer-next a {
+  color: var(--ink);
+  font-weight: 600;
+  text-underline-offset: 4px;
+}
+
+.empty {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 56px 24px;
+  border-radius: 16px;
+  border: 1.5px dashed var(--line);
+}
+
+.empty-art {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 24px;
+  border: 1.5px dashed var(--ink-3);
+  transform: rotate(45deg);
+  opacity: 0.6;
+}
+
+.empty p {
+  margin: 0 0 20px;
+  max-width: 28rem;
+  color: var(--ink-2);
+}
+
+.empty .empty-title {
+  font: 500 24px var(--display);
+  color: var(--ink);
+  margin-bottom: 4px;
 }
 
 .tile.soon {
@@ -450,8 +641,30 @@ a.tile:hover .tile-name {
   color: var(--ink);
 }
 
-.ws-head h1 {
+.ws-title {
   flex: 1;
+}
+
+.ws-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+.ws-meta .pips {
+  margin-left: 0;
+}
+
+.ws-meta .dot {
+  width: 3px;
+  height: 3px;
+  background: var(--ink-3);
+}
+
+.ws-head h1 {
   font-size: 36px;
   line-height: 1.1;
   letter-spacing: -0.02em;
@@ -590,6 +803,27 @@ a.tile:hover .tile-name {
 
 .symbol[hidden] {
   display: none;
+}
+
+.tip summary {
+  width: fit-content;
+  font-size: 14px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.tip summary:hover,
+.tip[open] summary {
+  color: var(--ink);
+}
+
+.tip p {
+  margin: 8px 0 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--raised);
+  font-size: 15px;
+  color: var(--ink-2);
 }
 
 .controls {
@@ -787,6 +1021,21 @@ a.tile:hover .tile-name {
   color: var(--ink-3);
 }
 
+.finish .tally a {
+  color: var(--ink-2);
+  text-underline-offset: 3px;
+}
+
+.finish .share-status {
+  margin: 8px 0 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.finish .share-status:empty {
+  display: none;
+}
+
 .finish-actions {
   display: flex;
   flex-wrap: wrap;
@@ -812,7 +1061,18 @@ a.tile:hover .tile-name {
 @media (max-width: 880px) {
   .bar-row {
     padding: 12px 16px;
-    gap: 16px;
+    gap: 12px;
+  }
+  .path {
+    min-width: 0;
+  }
+  .station:not(:last-child)::after {
+    min-width: 8px;
+    margin: 0 4px;
+  }
+  .drawer-link {
+    flex: none;
+    padding: 0 10px;
   }
   .brand {
     font-size: 0;
@@ -827,6 +1087,16 @@ a.tile:hover .tile-name {
   }
   .picker-head h1 {
     font-size: 36px;
+  }
+  .features {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .drawer-name {
+    display: none;
+  }
+  .welcome {
+    flex-direction: column;
+    align-items: flex-start;
   }
   .up-next {
     grid-template-columns: 1fr;
