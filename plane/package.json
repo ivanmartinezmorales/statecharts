@@ -10,7 +10,7 @@
     "build": "npm run wasm && tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview --port 5330",
-    "deploy": "npm run build && vercel deploy dist --prod --yes --project how-a-787-works --scope ivanmartinez-8194s-projects"
+    "deploy": "npm run build && vercel deploy dist --prod --yes --project how-a-787-works --create-if-missing --scope ivanmartinez-8194s-projects"
   },
   "dependencies": {
     "react": "18.3.1",
