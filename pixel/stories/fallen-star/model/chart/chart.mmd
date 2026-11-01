@@ -12,26 +12,37 @@ stateDiagram-v2
   class lg2 yellow
   s0: A star falls
   s1: The fallen star
-  s2: The old owl
-  s3: Firefly meadow
-  s4: The cloud sea
-  s5: The Moon Whale
-  s6: Home in the sky
-  s7: Sweet dreams
+  s2: Firefly meadow
+  s3: The moon pond
+  s4: The old owl
+  s5: The cloud sea
+  s6: The Moon Whale
+  s7: The cloud sheep
+  s8: Home in the sky
+  s9: Stardust morning
+  s10: Sweet dreams
   [*] --> s0
   s0 --> s1: Pip slips out the window
-  s1 --> s2: ask the old owl for help
-  s1 --> s3: follow the fireflies
-  s2 --> s3: follow the fireflies
-  s3 --> s4: climb the cloud stairs
-  s4 --> s5: sing to the moon
-  s5 --> s6: the whale lifts Twinkle home
-  s6 --> s7: float home on a dandelion
+  s1 --> s2: follow the fireflies
+  s1 --> s3: visit the moon pond
+  s1 --> s4: ask the old owl for help
+  s2 --> s5: climb the cloud stairs
+  s3 --> s5: climb the cloud stairs
+  s4 --> s2: follow the fireflies
+  s4 --> s3: visit the moon pond
+  s5 --> s6: sing to the moon
+  s5 --> s7: follow the cloud sheep
+  s6 --> s8: the whale lifts Twinkle home
+  s7 --> s9: count the sheep as they climb
+  s8 --> s10: float home on a dandelion
   class s0 purple
   class s1 teal
   class s2 teal
   class s3 teal
-  class s4 yellow
+  class s4 teal
   class s5 yellow
   class s6 yellow
-  class s7 purple
+  class s7 yellow
+  class s8 yellow
+  class s9 purple
+  class s10 purple
