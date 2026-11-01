@@ -135,29 +135,38 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
 
   const complete = () => i === last && t >= 1;
 
+  // The loop calls draw() every frame, so only touch the DOM for what actually changed.
+  const setText = (el: HTMLElement, value: string) => {
+    if (el.textContent !== value) el.textContent = value;
+  };
+  const setAttr = (el: Element, name: string, value: string) => {
+    if (el.getAttribute(name) !== value) el.setAttribute(name, value);
+  };
+
   function draw() {
     const step = steps[i]!;
     paper.draw(i, t, cam, complete());
-    canvas.setAttribute('aria-label', step.text);
-    count.textContent = `Step ${i + 1} of ${steps.length}`;
-    instruction.textContent = step.text;
+    setAttr(canvas, 'aria-label', step.text);
+    setText(count, `Step ${i + 1} of ${steps.length}`);
+    setText(instruction, step.text);
     const lesson = lessonFor(step);
     symbol.hidden = lesson.slug === model.slug;
-    symbol.href = `#/fold/${lesson.slug}`;
-    symbol.textContent = `Uses the ${lesson.name} symbol`;
-    tip.textContent = tips[step.kind];
+    setAttr(symbol, 'href', `#/fold/${lesson.slug}`);
+    setText(symbol, `Uses the ${lesson.name} symbol`);
+    setText(tip, tips[step.kind]);
     // Keep the address on the current step, so a reload or a shared link lands here.
     const here = `#/fold/${model.slug}${i ? `/${i + 1}` : ''}`;
     if (location.hash !== here) history.replaceState(null, '', here);
-    scrub.value = String(Math.round(t * 1000));
-    play.textContent = t >= 1 ? (i === last ? 'Fold again' : 'Next step') : playing ? 'Pause' : 'Fold';
-    playAll.textContent = auto ? 'Stop playing' : 'Play every step';
-    playAll.setAttribute('aria-pressed', String(auto));
-    spin.setAttribute('aria-pressed', String(spinning));
+    const value = String(Math.round(t * 1000));
+    if (scrub.value !== value) scrub.value = value;
+    setText(play, t >= 1 ? (i === last ? 'Fold again' : 'Next step') : playing ? 'Pause' : 'Fold');
+    setText(playAll, auto ? 'Stop playing' : 'Play every step');
+    setAttr(playAll, 'aria-pressed', String(auto));
+    setAttr(spin, 'aria-pressed', String(spinning));
     reset.disabled = !resetting && cam.yaw === 0 && cam.pitch === 0;
     list.forEach((b, k) => {
       b.classList.toggle('past', k < i || (k === i && t >= 1));
-      if (k === i) b.setAttribute('aria-current', 'step');
+      if (k === i) setAttr(b, 'aria-current', 'step');
       else b.removeAttribute('aria-current');
     });
     // Built once per finish, so its buttons stay put while the model spins.
