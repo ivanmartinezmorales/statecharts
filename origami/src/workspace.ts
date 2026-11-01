@@ -60,6 +60,9 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
   let held = 0;
   let spinning = false;
   let resetting = false;
+  // A released drag keeps turning for a moment, like paper pushed across a table.
+  const vel = { yaw: 0, pitch: 0 };
+  let coasting = false;
   let raf = 0;
   let then = 0;
 
@@ -257,6 +260,14 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
       }
     }
     if (spinning) cam.yaw += dt * 0.0011;
+    if (coasting) {
+      cam.yaw += vel.yaw * dt;
+      cam.pitch = Math.max(-1.45, Math.min(1.45, cam.pitch + vel.pitch * dt));
+      const slow = Math.exp(-dt / 320);
+      vel.yaw *= slow;
+      vel.pitch *= slow;
+      coasting = Math.hypot(vel.yaw, vel.pitch) > 0.00005;
+    }
     if (resetting) {
       // Ease out on the clock, not per frame, so a 120 Hz screen settles as slowly as a 60 Hz one.
       const rest = Math.exp(-dt / 103);
@@ -268,7 +279,7 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
       }
     }
     draw();
-    raf = playing || spinning || resetting || auto ? requestAnimationFrame(frame) : 0;
+    raf = playing || spinning || resetting || coasting || auto ? requestAnimationFrame(frame) : 0;
   }
 
   function kick() {
@@ -315,13 +326,13 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
 
   function toggleSpin() {
     spinning = !spinning;
-    resetting = false;
+    resetting = coasting = false;
     if (spinning) kick();
     else draw();
   }
 
   function topView() {
-    spinning = false;
+    spinning = coasting = false;
     resetting = true;
     kick();
   }
@@ -346,22 +357,38 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
     }),
   );
 
-  let drag: { x: number; y: number; yaw: number; pitch: number } | null = null;
+  let drag: { x: number; y: number; yaw: number; pitch: number; at: number } | null = null;
   canvas.addEventListener('pointerdown', (e) => {
-    drag = { x: e.clientX, y: e.clientY, yaw: cam.yaw, pitch: cam.pitch };
-    spinning = resetting = false;
+    drag = { x: e.clientX, y: e.clientY, yaw: cam.yaw, pitch: cam.pitch, at: e.timeStamp };
+    vel.yaw = vel.pitch = 0;
+    spinning = resetting = coasting = false;
     canvas.setPointerCapture(e.pointerId);
     figure.classList.add('dragging', 'touched');
   });
   canvas.addEventListener('pointermove', (e) => {
     if (!drag) return;
-    cam.yaw = drag.yaw + (e.clientX - drag.x) * 0.012;
-    cam.pitch = Math.max(-1.45, Math.min(1.45, drag.pitch - (e.clientY - drag.y) * 0.012));
+    const yaw = drag.yaw + (e.clientX - drag.x) * 0.012;
+    const pitch = Math.max(-1.45, Math.min(1.45, drag.pitch - (e.clientY - drag.y) * 0.012));
+    const ms = e.timeStamp - drag.at;
+    if (ms > 0) {
+      // Blend recent samples so one jittery event cannot fling the paper.
+      vel.yaw = 0.6 * ((yaw - cam.yaw) / ms) + 0.4 * vel.yaw;
+      vel.pitch = 0.6 * ((pitch - cam.pitch) / ms) + 0.4 * vel.pitch;
+    }
+    drag.at = e.timeStamp;
+    cam.yaw = yaw;
+    cam.pitch = pitch;
     if (!raf) draw();
   });
-  const release = () => {
+  const release = (e: PointerEvent) => {
+    // Only a drag that is still moving as the pointer lifts keeps going.
+    const flung = motion && e.type === 'pointerup' && drag !== null && e.timeStamp - drag.at < 80 && Math.hypot(vel.yaw, vel.pitch) > 0.0004;
     drag = null;
     figure.classList.remove('dragging');
+    if (flung) {
+      coasting = true;
+      kick();
+    }
   };
   canvas.addEventListener('pointerup', release);
   canvas.addEventListener('pointercancel', release);
