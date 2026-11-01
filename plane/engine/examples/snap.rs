@@ -1,12 +1,15 @@
-// Renders one frame natively and writes it as a BMP, glow and bloom added on top: for looking at scenes without a
-// browser. `cargo run --release --example snap -- <scene> <cx> <cy> <zoom> [explode focus flows model yaw pitch anim] > out.bmp`
+// Renders one frame natively and writes it as a BMP, glow and bloom added on top: for looking at dioramas without a
+// browser. `./snap.sh out.png <scene> <tx> <ty> <tz> <yaw> <pitch> <dist> [explode focus flows anim]`
 use std::io::Write;
 
 fn main() {
     let a: Vec<f32> = std::env::args().skip(1).map(|s| s.parse().unwrap()).collect();
-    let (w, h) = (480usize, 270usize);
+    let (w, h) = (640usize, 360usize);
     plane_engine::resize(w as u32, h as u32);
     let p = plane_engine::params();
+    for i in 0..16 {
+        unsafe { *p.add(i) = if i == 8 { -1.0 } else { 0.0 } };
+    }
     for (i, v) in a.iter().enumerate() {
         unsafe { *p.add(i) = *v };
     }
