@@ -225,8 +225,10 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
     }
     if (spinning) cam.yaw += dt * 0.0011;
     if (resetting) {
-      cam.yaw = Math.atan2(Math.sin(cam.yaw), Math.cos(cam.yaw)) * 0.85;
-      cam.pitch *= 0.85;
+      // Ease out on the clock, not per frame, so a 120 Hz screen settles as slowly as a 60 Hz one.
+      const rest = Math.exp(-dt / 103);
+      cam.yaw = Math.atan2(Math.sin(cam.yaw), Math.cos(cam.yaw)) * rest;
+      cam.pitch *= rest;
       if (Math.abs(cam.yaw) + Math.abs(cam.pitch) < 0.002) {
         cam.yaw = cam.pitch = 0;
         resetting = false;
