@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pip and the Fallen Star</title>
+  <meta name="description" content="A pixel-art bedtime story you can step through: Pip the bear helps a fallen star get home.">
+  <meta name="theme-color" content="#140c22">
+  <link rel="icon" href="fallen-star/sky.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1 id="title">Pip and the Fallen Star</h1>
+      <p id="tagline"></p>
+    </header>
+
+    <figure class="stage">
+      <canvas id="scene" width="240" height="160" role="img" aria-label=""></canvas>
+    </figure>
+
+    <section class="page" aria-live="polite">
+      <h2 id="state-label"></h2>
+      <p id="state-text"></p>
+    </section>
+
+    <nav id="choices" aria-label="What happens next"></nav>
+
+    <section class="map">
+      <h3>The whole story</h3>
+      <p class="hint">Each picture is a state. Each arrow is something that happens. Tap a picture next to yours to go there.</p>
+      <svg id="map" viewBox="0 0 420 240" role="img" aria-label="A map of the story as a statechart"></svg>
+    </section>
+
+    <section class="rules">
+      <h3>Checked rules</h3>
+      <p class="hint" id="checked"></p>
+      <ul id="rules"></ul>
+    </section>
+
+    <footer>
+      <button id="restart" type="button">Start over</button>
+      <p>Drawn in code, pixel by pixel. Checked with <a href="https://github.com/tlaplus/tlaplus">TLC</a> through the statechart skill from <a href="https://github.com/cursor/plugins/tree/main/pstack">pstack</a>.</p>
+    </footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

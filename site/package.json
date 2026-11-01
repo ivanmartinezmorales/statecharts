@@ -1,0 +1,10 @@
+{
+  "name": "statecharts-site",
+  "private": true,
+  "license": "MIT",
+  "description": "Pixel-art stories you can step through, built from checked statecharts.",
+  "scripts": {
+    "build": "node build.js",
+    "serve": "node serve.js"
+  }
+}
