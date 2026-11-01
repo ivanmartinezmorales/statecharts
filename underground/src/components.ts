@@ -1,31 +1,67 @@
-// What you can click on inside a layer: what it is, a few facts, and how to build its exploded 3D model.
-// Numbers are typical for a big city's streets; every city differs, so the facts say "about" and "often".
+// What you can click on inside a layer: what it is, how it works, a few facts, and how to build its exploded 3D
+// model. Numbers are typical for a big North American city; every city differs, so the facts say "about" and "often".
+// Labels in layers.ts with no entry here are plain labels: they name a thing without opening anything.
 //
 // A model is a list of parts, from the inside out (a tube: a pipe or cable, its layers stepped back like a
 // stripped wire) or from the bottom up (a stack: slabs and rings set on each other). Sizes are in model units.
 
+import { PARTS, POWER_QUESTIONS, INTERNET_QUESTIONS } from './parts'
+
 export type Fact = [label: string, value: string]
 type Tube = { kind: 'tube'; parts: { name: string; color: string; r: number }[]; extras?: { name: string; color: string; shape: 'tape' | 'wire'; y: number }[] }
-type Stack = { kind: 'stack'; parts: { name: string; color: string; shape: 'box' | 'disc' | 'ring' | 'rails' | 'ties'; w: number; d: number; h: number; hole?: number; z?: number }[] }
+// A stack part sits on the one below unless it gives its own height `y` (so windings can sit around a core);
+// `repeat` copies it upward every `pitch` (insulator sheds, turbine blade rows), `cols` copies it sideways every
+// `gap` (a row of bushings). A stack with `axis: 'x'` lies on its side and pulls apart lengthwise, like a rotor
+// sliding out of a generator.
+type StackPart = { name: string; color: string; shape: 'box' | 'disc' | 'ring' | 'rails' | 'ties'; w: number; d: number; h: number; hole?: number; x?: number; y?: number; z?: number; repeat?: number; pitch?: number; cols?: number; gap?: number }
+type Stack = { kind: 'stack'; axis?: 'x'; parts: StackPart[] }
 export type Model = Tube | Stack
-export type Journey = 'water' | 'wastewater'
-export type Component = { title: string; blurb: string; facts: Fact[]; model?: Model; journey?: Journey }
+export type Journey = 'water' | 'wastewater' | 'power' | 'internet'
+export type Component = { title: string; blurb: string; steps?: string[]; facts: Fact[]; questions?: Fact[]; model?: Model; journey?: Journey }
+
+const WATER_STEPS = [
+  'Treated water leaves the reservoirs and big tunnels already under pressure, because the source is higher than the city.',
+  'Trunk mains, up to a meter or more across, carry it to each neighborhood.',
+  'Distribution mains under every street form a loop, so water can reach any block from two directions.',
+  'Valves every block or so let crews shut off one stretch to fix a break without cutting off the rest.',
+  'A service line branches into each building through a shutoff valve and a meter.',
+  'Tall buildings pump it to a rooftop tank, and it falls back down to the taps.',
+]
+const POWER_STEPS = [
+  'A power plant spins generators that make electricity at about 10,000 to 25,000 volts.',
+  'Transformers raise it to 115,000 volts or more for the long trip, because high voltage loses less on the way.',
+  'At a substation near the city, transformers bring it down to about 13,000 volts for the streets.',
+  'Feeder cables run under the streets in duct banks like this one.',
+  'In dense cities they feed a network: transformers in vaults under the sidewalk, all tied together, so one cable failing does not black out the block.',
+  'Those transformers drop it to 120/208 volts, which goes through a meter and a panel of breakers to every outlet.',
+]
+const SEWER_STEPS = [
+  'Every sink, tub and toilet has a curved trap that holds water, so sewer gas cannot come back up into the room.',
+  'A house drain, sloping about 2 cm per meter, carries everything out to the street. Vent pipes on the roof let air in so it flows smoothly.',
+  'Street sewers slope gently downhill, joining bigger and bigger pipes. Where the land rises, pumping stations lift the flow.',
+  'In many older cities the same sewers also take the rain from the storm drains: a combined sewer.',
+  'An interceptor gathers a whole neighborhood\'s sewers and carries them to a treatment plant.',
+  'In a heavy storm, more water arrives than the plant can treat; regulators let the overflow spill into a river so it does not back up into basements.',
+]
 
 export const COMPONENTS: Record<string, Component> = {
   'street-lamp': {
+    journey: 'power',
     title: 'Street lamp',
-    blurb: 'Its power comes up from a cable under the sidewalk, and a light sensor turns it on at dusk.',
-    facts: [['Power', 'About 50 to 150 watts for an LED head'], ['Height', 'Often 8 to 10 meters'], ['Fed by', 'A low-voltage cable in a conduit below the sidewalk']],
+    blurb: 'The end of a long trip for its electricity: from a power plant, through substations and the cables under this street, up the pole to the lamp.',
+    facts: [['Power', 'About 50 to 150 watts for an LED head'], ['Height', 'Often 8 to 10 meters'], ['Fed by', 'A low-voltage street lighting circuit in a conduit under the sidewalk'], ['Switch', 'A small light sensor on top turns it on at dusk']],
   },
-  'road-crew': {
-    title: 'Road crew',
-    blurb: 'Before anyone digs, every pipe and cable below is marked on the road in colored paint: blue for water, yellow for gas, red for power, orange for telecom, green for sewer.',
-    facts: [['Tools', 'A jackhammer to break the asphalt, cones and a barricade to keep traffic away'], ['Rule', 'Call before you dig, so the lines are marked first'], ['Flagger', 'Turns the STOP / SLOW sign to let cars pass one way at a time']],
+  hydrant: {
+    journey: 'water',
+    title: 'Fire hydrant',
+    blurb: 'A tap on the water main for firefighters. It connects to the main through its own pipe and valve, so it always has full city pressure.',
+    facts: [['Flow', 'Often 1,000 to 1,500 liters a minute or more'], ['Spacing', 'Usually every 100 meters or so along a street'], ['In cold places', 'The valve sits deep underground, below the frost line, so the hydrant drains empty and never freezes'], ['Color', 'Some cities color the cap to show how much water it can give']],
   },
   manhole: {
+    journey: 'wastewater',
     title: 'Manhole',
     blurb: 'A brick or concrete shaft from the street down to the sewer, with iron rungs to climb. The lid is round so it can never fall through its own hole.',
-    facts: [['Cover', 'Cast iron, about 100 to 150 kg'], ['Opening', 'About 60 cm across'], ['Spacing', 'Often one every 100 meters or so along a sewer']],
+    facts: [['Cover', 'Cast iron, about 100 to 150 kg'], ['Opening', 'About 60 cm across'], ['Spacing', 'At every bend and junction, and about every 100 meters along a straight sewer, so every stretch can be reached']],
     model: { kind: 'stack', parts: [
       { name: 'Precast base', color: '#7e7a72', shape: 'disc', w: 3.2, d: 3.2, h: 0.4 },
       { name: 'Riser ring', color: '#9a968c', shape: 'ring', w: 2.6, d: 2.6, h: 1.0, hole: 1.9 },
@@ -36,9 +72,10 @@ export const COMPONENTS: Record<string, Component> = {
     ] },
   },
   'storm-drain': {
+    journey: 'wastewater',
     title: 'Storm drain',
-    blurb: 'Rain runs along the gutter into this grate and down a pipe to the sewer, or in newer streets to its own pipe that empties into a river.',
-    facts: [['Grate', 'Cast iron, with slots narrow enough for bike wheels'], ['Catch basin', 'A sump below the grate traps sand and trash before the pipe']],
+    blurb: 'Rain runs along the gutter into this grate. In older cities it joins the sewer (a combined system); in newer streets it has its own pipe straight to a river.',
+    facts: [['Grate', 'Cast iron, with slots narrow enough for bike wheels'], ['Catch basin', 'A sump below the grate traps sand and trash, with a hood that keeps floating litter and sewer smells in'], ['In a storm', 'A combined sewer can fill up; the overflow goes to the river untreated, which is why many cities are building giant storage tunnels']],
   },
   road: {
     title: 'Road layers',
@@ -54,8 +91,16 @@ export const COMPONENTS: Record<string, Component> = {
   'water-main': {
     journey: 'water',
     title: 'Water main',
-    blurb: 'Clean drinking water under pressure, on its way to every tap in the block. A smaller pipe branches off it into each building.',
-    facts: [['Pressure', 'About 40 to 80 psi (3 to 5.5 bar), enough to lift water several floors'], ['Size', 'Often 15 to 30 cm across under a street; trunk mains can be over a meter'], ['Made of', 'Ductile iron lined with cement mortar; older mains are cast iron'], ['Depth', 'Below the frost line, so it never freezes']],
+    blurb: 'Clean drinking water under pressure, on its way to every tap, hydrant and sprinkler on the block. It is one link in a looped grid that covers the whole city.',
+    steps: WATER_STEPS,
+    facts: [
+      ['Pressure', 'About 40 to 80 psi (3 to 5.5 bar). The city is split into pressure zones by height, so low streets are not over-pressured and hills still get enough'],
+      ['Size', 'Often 15 to 30 cm across under a street; trunk mains can be over a meter'],
+      ['Made of', 'Ductile iron lined with cement mortar; older mains are cast iron, some over 100 years old'],
+      ['Depth', 'About 1 to 2 meters, below the frost line so it never freezes'],
+      ['Kept clean', 'A trace of chlorine stays in the water all the way to the tap, and crews flush mains through hydrants'],
+      ['Breaks', 'Old cast iron can crack when the ground freezes and thaws; the loop means a break can be valved off while water flows around it'],
+    ],
     model: { kind: 'tube', parts: [
       { name: 'Drinking water', color: '#4f9ac8', r: 0.7 },
       { name: 'Cement-mortar lining', color: '#c9c4b8', r: 0.8 },
@@ -63,10 +108,20 @@ export const COMPONENTS: Record<string, Component> = {
       { name: 'Polyethylene sleeve', color: '#2e3a5a', r: 1.02 },
     ] },
   },
+  'water-service': {
+    journey: 'water',
+    title: 'Water service line',
+    blurb: 'The building\'s own pipe off the main. It passes a shutoff valve under the sidewalk, then a meter in the basement that counts every liter.',
+    facts: [['Size', 'About 2 to 5 cm for a house, bigger for an apartment building'], ['Made of', 'Copper or plastic; very old lines can be lead, which cities are replacing'], ['Valves', 'A curb valve under the sidewalk and a main shutoff inside'], ['Backflow', 'A check valve stops water from the building flowing back into the main']],
+    model: { kind: 'tube', parts: [
+      { name: 'Drinking water', color: '#4f9ac8', r: 0.55 },
+      { name: 'Copper pipe', color: '#c4703a', r: 0.65 },
+    ] },
+  },
   'gas-line': {
     title: 'Gas line',
     blurb: 'Natural gas for stoves and boilers. It has no smell of its own, so a sulfur odor is added to make any leak easy to notice.',
-    facts: [['Pressure', 'Mains often run at 15 to 60 psi; into a home it is a fraction of a psi'], ['Made of', 'Yellow polyethylene plastic; older lines are coated steel or cast iron'], ['Above it', 'A yellow warning tape about 30 cm up, then backfill, then the road'], ['Beside it', 'A copper tracer wire, so a plastic pipe can be found with a metal detector']],
+    facts: [['Pressure', 'Mains often run at 15 to 60 psi; a regulator at each building drops it to a fraction of a psi'], ['Made of', 'Yellow polyethylene plastic; older lines are coated steel or cast iron'], ['Above it', 'A yellow warning tape about 30 cm up, then backfill, then the road'], ['Beside it', 'A copper tracer wire, so a plastic pipe can be found with a metal detector']],
     model: { kind: 'tube', parts: [
       { name: 'Natural gas', color: '#e8e2a0', r: 0.6 },
       { name: 'Polyethylene pipe', color: '#f2c230', r: 0.72 },
@@ -76,9 +131,19 @@ export const COMPONENTS: Record<string, Component> = {
     ] },
   },
   power: {
+    journey: 'power',
     title: 'Power cables',
-    blurb: 'Electricity for the block runs in plastic conduits set in concrete, which protects the cables and helps carry their heat away.',
-    facts: [['Voltage', 'Often about 13,000 volts here, stepped down to 120/240 volts near the buildings'], ['Conductor', 'Copper or aluminum strands'], ['Around it', 'Insulation, a semiconducting screen and a metal shield, so the high voltage stays inside'], ['Duct bank', 'Plastic conduits in concrete, with spares for future cables']],
+    blurb: 'The block\'s electricity, in plastic conduits set in concrete. The concrete protects the cables from shovels and helps carry their heat away.',
+    steps: POWER_STEPS,
+    questions: POWER_QUESTIONS,
+    facts: [
+      ['Voltage', 'Often about 13,000 volts in these feeders, stepped down to 120/208 volts near the buildings'],
+      ['Current', 'Alternating current at 60 cycles a second (50 in Europe)'],
+      ['Conductor', 'Copper or aluminum strands, as thick as a finger or more'],
+      ['Around it', 'Insulation, semiconducting screens and a metal shield keep the high voltage inside and safe to touch'],
+      ['Duct bank', 'Plastic conduits in concrete, with spares so new cables can be pulled through without digging'],
+      ['Network', 'Several feeders supply each block, so if one fails the others carry the load'],
+    ],
     model: { kind: 'tube', parts: [
       { name: 'Copper conductor', color: '#d98a4a', r: 0.35 },
       { name: 'Conductor screen', color: '#2a2a30', r: 0.42 },
@@ -89,6 +154,8 @@ export const COMPONENTS: Record<string, Component> = {
     ] },
   },
   telecom: {
+    journey: 'internet',
+    questions: INTERNET_QUESTIONS,
     title: 'Internet cables',
     blurb: 'Light pulses in strands of glass thinner than a hair carry phone calls, video and the web in and out of the block.',
     facts: [['Fiber', 'Glass about 125 micrometers thick, a bit more than a hair'], ['Speed', 'Light in glass travels about 200,000 km a second'], ['Count', 'One cable can hold hundreds of fibers'], ['Housing', 'Plastic innerducts, often green or orange']],
@@ -116,7 +183,7 @@ export const COMPONENTS: Record<string, Component> = {
     journey: 'wastewater',
     title: 'House drain',
     blurb: 'Everything from the building\'s sinks, showers and toilets slides down this pipe into the sewer. No pump: just a steady slope.',
-    facts: [['Size', 'About 10 to 15 cm across'], ['Slope', 'About 2 cm drop per meter'], ['Made of', 'Clay, cast iron or PVC plastic']],
+    facts: [['Size', 'About 10 to 15 cm across'], ['Slope', 'About 2 cm drop per meter, steep enough to carry solids, gentle enough to keep water with them'], ['Made of', 'Clay, cast iron or PVC plastic'], ['Cleanout', 'A capped opening where a plumber can push a snake through a clog']],
     model: { kind: 'tube', parts: [
       { name: 'Wastewater', color: '#7a8a5a', r: 0.5 },
       { name: 'Vitrified clay pipe', color: '#b07a5a', r: 0.68 },
@@ -125,8 +192,15 @@ export const COMPONENTS: Record<string, Component> = {
   'brick-sewer': {
     journey: 'wastewater',
     title: 'Brick sewer',
-    blurb: 'Many city sewers were laid in brick in the 1800s and still work. Their egg shape keeps a thin trickle moving fast enough to carry everything along.',
-    facts: [['Age', 'Often well over 100 years'], ['Walls', 'Two or three rings of brick in mortar'], ['Flow', 'By gravity, downhill to a treatment plant'], ['Combined', 'Older sewers also take rain, and can overflow in big storms']],
+    blurb: 'Many city sewers were laid in brick in the 1800s and still work. Their egg shape keeps even a small flow deep and fast enough to carry everything along.',
+    steps: SEWER_STEPS,
+    facts: [
+      ['Age', 'Often well over 100 years'],
+      ['Walls', 'Two or three rings of brick in mortar'],
+      ['Flow', 'By gravity, at about 0.6 to 1 meter a second, fast enough that solids never settle'],
+      ['Combined', 'Older sewers also take rain, and can overflow into rivers in big storms'],
+      ['Upkeep', 'Robots with cameras crawl the pipes to find cracks; some are relined from inside without digging'],
+    ],
     model: { kind: 'tube', parts: [
       { name: 'Wastewater', color: '#5f7a5a', r: 0.9 },
       { name: 'Inner brick ring', color: '#9a4a36', r: 1.1 },
@@ -134,26 +208,12 @@ export const COMPONENTS: Record<string, Component> = {
       { name: 'Mortar and backfill', color: '#c9a78a', r: 1.4 },
     ] },
   },
-  'sewer-worker': {
-    title: 'Sewer worker',
-    blurb: 'Crews walk the big sewers to check for cracks, roots and blockages. Before going down they test the air, and someone always stays at the top.',
-    facts: [['Gear', 'A gas detector, a harness on a line, a headlamp and waders'], ['Air', 'Fans blow fresh air down the manhole first'], ['Today', 'Many pipes are now checked by small camera robots instead']],
-  },
-  rats: {
-    title: 'Sewer rats',
-    blurb: 'Brown rats are good swimmers and climbers, and can squeeze through a gap about the width of a thumb.',
-    facts: [['Swim', 'They can hold their breath for a few minutes'], ['Teeth', 'Strong enough to gnaw through soft pipe and wood']],
-  },
   wastewater: {
     journey: 'wastewater',
     title: 'Wastewater',
     blurb: 'What goes down the drains, flowing downhill toward a treatment plant, where it is cleaned before going back to a river or the sea.',
-    facts: [['Speed', 'About 0.6 to 1 meter a second, fast enough to keep solids moving'], ['Mostly', 'Over 99% water']],
-  },
-  ladder: {
-    title: 'Manhole ladder',
-    blurb: 'Iron or plastic-coated steel rungs set into the shaft wall, about 30 cm apart.',
-    facts: [['Rungs', 'About 30 cm apart'], ['Safety', 'Workers climb clipped to a line from the top']],
+    steps: SEWER_STEPS,
+    facts: [['Mostly', 'Over 99% water'], ['Volume', 'A city of a million people sends roughly 300 to 500 million liters a day'], ['Treatment', 'Screens, settling tanks, bacteria and disinfection; the settled sludge can be turned into biogas and fertilizer']],
   },
   train: {
     title: 'Subway train',
@@ -170,11 +230,6 @@ export const COMPONENTS: Record<string, Component> = {
       { name: 'Running rails', color: '#a8b0bc', shape: 'rails', w: 4.4, d: 1.4, h: 0.22 },
       { name: 'Third rail and cover', color: '#e8c04a', shape: 'box', w: 4.4, d: 0.2, h: 0.2, z: 1.2 },
     ] },
-  },
-  'tunnel-light': {
-    title: 'Tunnel light',
-    blurb: 'Lights along the tunnel wall let crews and passengers see in an emergency, and mark the way to the exits.',
-    facts: [['Power', 'Its own circuit, with a battery or generator backup']],
   },
   piles: {
     title: 'Building piles',
@@ -201,7 +256,8 @@ export const COMPONENTS: Record<string, Component> = {
     journey: 'water',
     title: 'Water tunnel',
     blurb: 'Why so deep? Bored through solid rock, a tunnel is out of the way of everything above, and the rock holds the huge water pressure in. Shafts rise from it to the mains under the streets.',
-    facts: [['Depth', 'Some city water tunnels run 150 to 250 meters down'], ['Size', 'Several meters across'], ['Lining', 'Concrete, sometimes with a steel liner'], ['Carries', 'Fresh water from reservoirs far outside the city']],
+    steps: WATER_STEPS,
+    facts: [['Depth', 'Some city water tunnels run 150 to 250 meters down'], ['Size', 'Several meters across'], ['Lining', 'Concrete, sometimes with a steel liner'], ['Carries', 'Fresh water from reservoirs far outside the city, by gravity alone'], ['Backup', 'Big cities build a second and third tunnel so one can be shut for repairs']],
     model: { kind: 'tube', parts: [
       { name: 'Fresh water', color: '#4f9ac8', r: 1.1 },
       { name: 'Steel liner', color: '#7f8fa6', r: 1.18 },
@@ -209,4 +265,5 @@ export const COMPONENTS: Record<string, Component> = {
       { name: 'Grouted rock', color: '#5a5866', r: 1.8 },
     ] },
   },
+  ...PARTS,
 }

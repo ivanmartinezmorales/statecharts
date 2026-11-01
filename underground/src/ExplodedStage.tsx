@@ -12,7 +12,7 @@ import { Life } from './Life'
 type S = { open: boolean; tags: boolean }
 type Look = { width: number; pad: number; gap: number; x: number; k: number }
 
-const WIDE: Look = { width: 640, pad: 24, gap: 18, x: 24, k: 1.25 }
+const WIDE: Look = { width: 960, pad: 24, gap: 24, x: 24, k: 2 }
 const COMPACT: Look = { width: 352, pad: 16, gap: 12, x: 16, k: 1 }
 
 const sliceH = (l: Layer) => l.slice[1] - l.slice[0]
@@ -71,7 +71,7 @@ export function ExplodedStage({ onOpen }: { onOpen: (index: number, from: DOMRec
                 <span className="ug-tag ug-tag--on-slice" data-on={s.tags || undefined} style={{ left: box.x + 8, top: box.y + 8 }}>{l.name}</span>
               ) : (
                 <>
-                  <button type="button" className="ug-tag" data-target={`tag-${l.id}`} data-cursor="pointer" data-on={s.tags || undefined} tabIndex={-1} onClick={() => open(i)} style={{ left: box.x + box.width + 44, top: box.y + box.height / 2 - 17 }}>
+                  <button type="button" className="ug-tag" data-target={`tag-${l.id}`} data-cursor="pointer" data-on={s.tags || undefined} tabIndex={-1} onClick={() => open(i)} style={{ left: box.x + box.width + 48, top: box.y + box.height / 2 - 26 }}>
                     <span>{l.name}</span><small>{l.depth}</small>
                   </button>
                   <Connector className="ug-leader" from={{ x: tag.x, y: tag.y + tag.height / 2 }} to={{ x: box.x + box.width - 10, y: box.y + box.height / 2 }} route="straight" show={s.tags && tag.width > 0} />
