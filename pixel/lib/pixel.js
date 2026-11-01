@@ -2,7 +2,8 @@
 // Paints a scene with light and texture, then cuts it down to real pixels: a small palette, light ordered dither,
 // and a hand-placed detail pass (eyes, glints) on top so faces stay crisp.
 //
-// Scenes are drawn in pixel units: (0,0) is the top-left pixel, the picture is W x H pixels. The painter draws at
+// Scenes are drawn in pixel units: (0,0) is the top-left pixel, the picture is w x h pixels (W x H unless a scene
+// asks for another size). The painter draws at
 // SS times that size, so a 1-unit fleck becomes texture inside one final pixel.
 const fs = require('fs');
 const path = require('path');
@@ -25,9 +26,9 @@ const rgb = (c) => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
 const mix = (a, b, t) => { const A = hex(a), B = hex(b); return rgb(A.map((v, i) => v + (B[i] - v) * t)); };
 
 // ---- painting helpers, bound to one context and one random stream
-function painter(x, R) {
+function painter(x, R, w, h) {
   const P = {
-    x, R,
+    x, R, w, h,
     rect(x0, y0, w, h, fill) { x.fillStyle = fill; x.fillRect(x0, y0, w, h); },
     rrect(x0, y0, w, h, r, fill) {
       x.beginPath(); x.moveTo(x0 + r, y0); x.arcTo(x0 + w, y0, x0 + w, y0 + h, r); x.arcTo(x0 + w, y0 + h, x0, y0 + h, r);
@@ -71,9 +72,9 @@ function painter(x, R) {
     fleckRect(x0, y0, w, h, colors, density, size) { P._bounds = { x: x0, y: y0, w, h }; P.fleck((c) => c.rect(x0, y0, w, h), colors, density, size); },
     fleckEllipse(cx, cy, rx, ry, colors, density, size) { P._bounds = { x: cx - rx, y: cy - ry, w: 2 * rx, h: 2 * ry }; P.fleck((c) => c.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2), colors, density, size); },
     vignette(strength = 0.6, color = [8, 4, 20]) {
-      const g = x.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, W * 0.72);
+      const g = x.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.max(w, h) * 0.72);
       g.addColorStop(0, `rgba(${color},0)`); g.addColorStop(1, `rgba(${color},${strength})`);
-      x.fillStyle = g; x.fillRect(0, 0, W, H);
+      x.fillStyle = g; x.fillRect(0, 0, w, h);
     },
     line(pts, color, width = 1) { x.beginPath(); x.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) x.lineTo(p[0], p[1]); x.strokeStyle = color; x.lineWidth = width; x.stroke(); },
   };
@@ -101,7 +102,7 @@ function palette(px, k, R) {
 const BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
 
 // ---- the detail pass works on the final pixels
-function grid(pix) {
+function grid(pix, W, H) {
   const G = {
     set(px, py, color) { px |= 0; py |= 0; if (px < 0 || py < 0 || px >= W || py >= H) return; const c = typeof color === 'string' ? hex(color) : color; pix.set(c, 3 * (py * W + px)); },
     get(px, py) { const i = 3 * (py * W + px); return [pix[i], pix[i + 1], pix[i + 2]]; },
@@ -116,11 +117,11 @@ function grid(pix) {
   return G;
 }
 
-async function render({ id, outDir, colors = 40, dither = 7, seed, paint, details, upscale = 6 }) {
+async function render({ id, outDir, colors = 40, dither = 7, seed, paint, details, upscale = 6, w: W = module.exports.W, h: H = module.exports.H }) {
   const R = rng(seed || id);
   const hi = createCanvas(W * SS, H * SS), x = hi.getContext('2d');
   x.scale(SS, SS);
-  paint(painter(x, R));
+  paint(painter(x, R, W, H));
 
   const lo = createCanvas(W, H), lc = lo.getContext('2d');
   lc.imageSmoothingEnabled = true; lc.imageSmoothingQuality = 'high'; lc.drawImage(hi, 0, 0, W, H);
@@ -135,7 +136,7 @@ async function render({ id, outDir, colors = 40, dither = 7, seed, paint, detail
     for (const p of pal) { const dd = (r - p[0]) ** 2 * 0.9 + (g - p[1]) ** 2 * 1.2 + (b - p[2]) ** 2 * 0.8; if (dd < bd) { bd = dd; best = p; } }
     pix[3 * i] = best[0]; pix[3 * i + 1] = best[1]; pix[3 * i + 2] = best[2];
   }
-  if (details) details(grid(pix), R);
+  if (details) details(grid(pix, W, H), R);
 
   const out = createCanvas(W * upscale, H * upscale), oc = out.getContext('2d');
   for (let y = 0; y < H; y++) for (let xx = 0; xx < W; xx++) {
