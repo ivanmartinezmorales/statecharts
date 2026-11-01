@@ -3,7 +3,11 @@
 // picture pixels. A label with `track` follows something that moves (see life.ts) instead of a fixed spot.
 
 export type Label = { id: string; text: string; at: [number, number]; note: [number, number]; track?: 'worker' | 'rat' | 'train' }
-export type Layer = { id: string; name: string; depth: string; slice: [number, number]; text: string; labels: Label[] }
+// A shot: where the camera looks (picture pixels) and how close (1 fills the screen with the layer). Scrolling plays
+// a layer's shots in order, easing back out and in from one to the next.
+export type Shot = { at: [number, number]; zoom: number }
+export type Layer = { id: string; name: string; depth: string; slice: [number, number]; text: string; labels: Label[]; shots: Shot[] }
+const shot = (x: number, y: number, zoom: number): Shot => ({ at: [x, y], zoom })
 
 export const LAYERS: Layer[] = [
   {
@@ -12,11 +16,13 @@ export const LAYERS: Layer[] = [
     depth: 'Ground level',
     slice: [0, 104],
     text: 'Everything up here leans on what is below it. The lamp is wired from underground, the hydrant taps the water main, and the grate at the curb carries rain away. Tonight a road crew has the manhole open: the way down.',
+    shots: [shot(160, 60, 1), shot(52, 44, 1.7), shot(176, 58, 2.2), shot(132, 88, 2.6), shot(262, 82, 1.9), shot(160, 92, 1.15)],
     labels: [
       { id: 'street-lamp', text: 'Street lamp', at: [174, 55], note: [104, 18] },
       { id: 'road-crew', text: 'Road crew', at: [124, 86], note: [104, 44] },
       { id: 'manhole', text: 'Open manhole', at: [152, 98], note: [150, 70] },
       { id: 'storm-drain', text: 'Storm drain', at: [267, 103], note: [204, 60] },
+      { id: 'hydrant', text: 'Fire hydrant', at: [273, 90], note: [300, 70] },
     ],
   },
   {
@@ -25,9 +31,11 @@ export const LAYERS: Layer[] = [
     depth: 'About 1 to 2 meters down',
     slice: [104, 206],
     text: 'Just under the road is a crowded layer. Water and gas come in through pipes, electricity and internet through cables in concrete. Each runs at its own depth, so crews know where to dig. A building\'s basement sits right beside them.',
+    shots: [shot(44, 160, 1.9), shot(110, 140, 2.5), shot(152, 128, 1.7), shot(176, 134, 2.7), shot(214, 138, 2.4), shot(268, 126, 2), shot(160, 156, 1)],
     labels: [
       { id: 'road', text: 'Road layers', at: [300, 113], note: [290, 150] },
       { id: 'water-main', text: 'Water main', at: [124, 140], note: [96, 160] },
+      { id: 'water-service', text: 'Water service line', at: [104, 140], note: [80, 122] },
       { id: 'gas-line', text: 'Gas line', at: [176, 130], note: [166, 158] },
       { id: 'power', text: 'Power cables', at: [213, 136], note: [196, 104] },
       { id: 'telecom', text: 'Internet cables', at: [253, 134], note: [262, 166] },
@@ -40,6 +48,7 @@ export const LAYERS: Layer[] = [
     depth: 'About 3 to 6 meters down',
     slice: [206, 290],
     text: 'Everything that goes down a drain ends up here, flowing downhill to a treatment plant. Brick sewers like this one can be well over a hundred years old. Workers climb down the manhole ladder to check on them.',
+    shots: [shot(112, 214, 2.3), shot(152, 232, 1.8), shot(206, 262, 1.6), shot(290, 240, 2), shot(200, 250, 1)],
     labels: [
       { id: 'house-drain', text: 'House drain', at: [112, 207], note: [70, 230] },
       { id: 'ladder', text: 'Manhole ladder', at: [152, 210], note: [172, 199] },
@@ -55,6 +64,7 @@ export const LAYERS: Layer[] = [
     depth: 'About 6 to 15 meters down',
     slice: [290, 380],
     text: 'Deeper still, trains run through a concrete box. Many old lines were built by digging up the street, building the box and covering it over again. Beside it, the building\'s piles reach past the tunnel toward the rock.',
+    shots: [shot(40, 330, 2.1), shot(134, 314, 2.5), shot(232, 336, 2.2), shot(220, 366, 2.7), shot(200, 335, 1)],
     labels: [
       { id: 'piles', text: 'Building piles', at: [76, 330], note: [6, 300] },
       { id: 'tunnel-light', text: 'Tunnel light', at: [134, 311], note: [100, 292] },
@@ -68,6 +78,7 @@ export const LAYERS: Layer[] = [
     depth: 'Below about 15 meters',
     slice: [380, 480],
     text: 'Solid rock can carry the heaviest loads, so tall buildings stand on it. The deepest tunnels are bored straight through it, bringing fresh water to the city from reservoirs far away.',
+    shots: [shot(22, 392, 2.5), shot(110, 440, 1.6), shot(236, 404, 2.1), shot(236, 444, 2.9), shot(160, 430, 1)],
     labels: [
       { id: 'pile-footing', text: 'Pile footing', at: [17, 387], note: [34, 394] },
       { id: 'bedrock', text: 'Bedrock', at: [110, 440], note: [92, 456] },

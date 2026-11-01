@@ -46,10 +46,10 @@ function build(model: Model): Built {
       parts.push({ meshes: [m], place: (t) => { m.position.set(0, e.y + t * (0.5 + j * 0.4), e.shape === 'wire' ? outer * 0.4 : 0) } })
     })
   } else {
-    // Bottom up: each part sits on the one below, and the stack lifts apart
+    // Bottom up: each part sits on the one below (or at its own height), and the stack lifts apart
     let y = 0
     model.parts.forEach((p, i) => {
-      const meshes: THREE.Mesh[] = []
+      let meshes: THREE.Mesh[] = []
       if (p.shape === 'box') meshes.push(new THREE.Mesh(new THREE.BoxGeometry(p.w, p.h, p.d), mat(p.color)))
       else if (p.shape === 'disc') meshes.push(new THREE.Mesh(new THREE.CylinderGeometry(p.w / 2, p.w / 2, p.h, 20), mat(p.color)))
       else if (p.shape === 'ring') {
@@ -60,15 +60,22 @@ function build(model: Model): Built {
       } else {
         for (let k = 0; k < 7; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.32, p.h, p.d), mat(p.color)); m.position.x = -p.w / 2 + 0.3 + k * ((p.w - 0.6) / 6); meshes.push(m) }
       }
+      // copies upward (sheds, blade rows) and sideways (a row of bushings)
+      const copies = (src: THREE.Mesh[], n: number, step: THREE.Vector3) => src.flatMap((m) => Array.from({ length: n }, (_, k) => { const c = k ? m.clone() : m; c.position.add(step.clone().multiplyScalar(k)); return c }))
+      if (p.repeat) meshes = copies(meshes, p.repeat, new THREE.Vector3(0, p.pitch ?? p.h * 1.5, 0))
+      if (p.cols) { meshes = copies(meshes, p.cols, new THREE.Vector3(p.gap ?? p.w * 1.6, 0, 0)); meshes.forEach((m) => { m.position.x -= ((p.cols! - 1) * (p.gap ?? p.w * 1.6)) / 2 }) }
       const holder = new THREE.Group()
       meshes.forEach((m) => holder.add(m))
       group.add(holder)
-      const rest = y + p.h / 2
-      holder.position.z = p.z ?? 0
-      y += p.h
+      const tall = p.repeat ? (p.repeat - 1) * (p.pitch ?? p.h * 1.5) + p.h : p.h
+      const rest = (p.y ?? y) + p.h / 2
+      holder.position.set(p.x ?? 0, rest, p.z ?? 0)
+      if (p.y === undefined) y += tall
+      else y = Math.max(y, p.y + tall)
       parts.push({ meshes, place: (t) => { holder.position.y = rest + i * 0.5 * t } })
     })
-    group.position.y = -y / 2 - 0.6
+    if (model.axis === 'x') { group.rotation.z = -Math.PI / 2; group.position.x = -y / 2 - 0.6 }
+    else group.position.y = -y / 2 - 0.6
   }
   return { group, parts }
 }

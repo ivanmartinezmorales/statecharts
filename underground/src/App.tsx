@@ -16,11 +16,25 @@ export function App() {
     if (was) requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-target="slice-${LAYERS[was.index].id}"]`)?.focus())
   }, [inside])
 
+  const enter = (index: number) => { const from = sliceRect(index); if (from) setInside({ index, from }) }
+
   return (
-    <main>
-      <header className="ug-hero">
+    <main className="ug-home">
+      <header className="ug-hero" {...(inside ? { inert: '' } : {})}>
+        <p className="ug-hero__kicker">One city block, top to bottom</p>
         <h1>Under the Street</h1>
-        <p>A pixel cutaway of one city block, from the sidewalk down to solid rock, pulled apart into its layers. Click a layer to go inside it.</p>
+        <p className="ug-hero__lede">Below every sidewalk is a hidden city: water under pressure, gas, thousands of volts, a river of wastewater, trains, and the rock it all stands on. Pick a layer and go inside.</p>
+        <ol className="ug-hero__index">
+          {LAYERS.map((l, i) => (
+            <li key={l.id}>
+              <button type="button" onClick={() => enter(i)}>
+                <span className="ug-hero__num">{String(i + 1).padStart(2, '0')}</span>
+                <span className="ug-hero__name">{l.name}</span>
+                <span className="ug-hero__depth">{l.depth}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
       </header>
 
       <section className="ug-explode" aria-label="The cutaway, pulled apart into its layers" {...(inside ? { inert: '' } : {})}>
