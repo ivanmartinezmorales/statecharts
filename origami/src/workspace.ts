@@ -39,6 +39,9 @@ const tips: Record<Step['kind'], string> = {
   reverse: 'Pre-crease the line in both directions first. Open the layers slightly and push the point between them, along the crease.',
 };
 
+/** Paper starts and stops gently: the fold clock stays linear, only what is drawn eases. */
+const eased = (t: number) => t * t * (3 - 2 * t);
+
 /** First sentence of a step, for the step list. */
 const short = (text: string) => text.split(/(?<=\.)\s/)[0]!.replace(/\.$/, '');
 
@@ -145,7 +148,7 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
 
   function draw() {
     const step = steps[i]!;
-    paper.draw(i, t, cam, complete());
+    paper.draw(i, eased(t), cam, complete());
     setAttr(canvas, 'aria-label', step.text);
     setText(count, `Step ${i + 1} of ${steps.length}`);
     setText(instruction, step.text);
