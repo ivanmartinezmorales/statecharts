@@ -159,6 +159,18 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
     if (el.getAttribute(name) !== value) el.setAttribute(name, value);
   };
 
+  // Keep the current step in view inside the scrolling list, gliding when the step changes under the visitor.
+  const stepList = $<HTMLElement>('.step-list');
+  let listed = -1;
+  function followStep(row: HTMLElement) {
+    const box = stepList.getBoundingClientRect();
+    const at = row.getBoundingClientRect();
+    const over = at.bottom - box.bottom;
+    const under = box.top - at.top;
+    const by = over > 0 ? over : under > 0 ? -under : 0;
+    if (by) stepList.scrollBy({ top: by, behavior: motion && drawn ? 'smooth' : 'auto' });
+  }
+
   function draw() {
     const step = steps[i]!;
     paper.draw(i, eased(t), cam, complete());
@@ -185,6 +197,10 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
       if (k === i) setAttr(b, 'aria-current', 'step');
       else b.removeAttribute('aria-current');
     });
+    if (listed !== i) {
+      listed = i;
+      followStep(list[i]!);
+    }
     // Built once per finish, so its buttons stay put while the model spins.
     const shown = !finish.hidden;
     finish.hidden = !complete();
