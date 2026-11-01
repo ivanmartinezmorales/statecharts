@@ -184,7 +184,9 @@ pub fn draw(c: &mut Canvas, fr: &mut Frame, origin: V3, p: Option<&Params>) {
             (b, insides(), p3::parts())
         });
         d3::draw(c, fr, base, &Xf::at(origin), 1);
-        for (id, mesh) in inside.iter() {
+        // the tanks only light up when fuel is the subject; otherwise they would drown out the other systems
+        let fuel_on = p.is_some_and(|p| p.flows & flows::FUEL != 0 || p.focus == 9);
+        for (id, mesh) in inside.iter().filter(|(id, _)| *id != TANKS || fuel_on) {
             d3::draw(c, fr, mesh, &at, *id);
         }
         // the skin last, see-through, over everything inside it
@@ -196,7 +198,7 @@ pub fn draw(c: &mut Canvas, fr: &mut Frame, origin: V3, p: Option<&Params>) {
     let o = origin.add(v(0.0, HEIGHT, 0.0));
     let w = |pts: &[(f32, f32, f32)]| -> Vec<V3> { pts.iter().map(|&(r, a, h)| o.add(pf(r, a, h))).collect() };
     let cam = fr.cam;
-    let run = |c: &mut Canvas, pts: &[(f32, f32, f32)], col: u32, core: u32, speed: f32| d3::flow(c, &cam, &w(pts), 0.35, core, col, speed, 0.9);
+    let run = |c: &mut Canvas, pts: &[(f32, f32, f32)], col: u32, core: u32, speed: f32| d3::flow(c, &cam, &w(pts), 0.5, core, col, speed, 1.0);
     if f & flows::FUEL != 0 {
         for s in [1.0f32, -1.0] {
             run(c, &[(6.0 * s, 33.5, -1.6), (8.6 * s, 30.0, -1.7), (9.9 * s, 27.0, -2.6)], FUEL, FUEL_CORE, 6.0);
