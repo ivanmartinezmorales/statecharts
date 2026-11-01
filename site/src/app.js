@@ -148,7 +148,7 @@
     };
   })();
 
-  // ---- the map: states on a ring in story order, steps as arrows
+  // ---- the map: the chart laid out in layers, one per step from the start, with forks side by side
   const NS = 'http://www.w3.org/2000/svg';
   const el = (name, attrs, parent) => { const n = document.createElementNS(NS, name); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); parent?.appendChild(n); return n; };
 
@@ -161,26 +161,37 @@
       changed = false;
       for (const s of story.steps) if (!back.has(s) && depth[s.from] !== undefined && (depth[s.to] ?? -1) < depth[s.from] + 1) { depth[s.to] = depth[s.from] + 1; changed = true; }
     }
-    return story.states.map((s) => s.id).sort((a, b) => (depth[a] ?? 99) - (depth[b] ?? 99));
+    // Each layer holds the states at one depth; within a layer, order by where their parents sit, so arrows cross less.
+    const layers = [];
+    for (const s of story.states) (layers[depth[s.id] ?? 0] ||= []).push(s.id);
+    const slot = {};
+    layers.forEach((layer, L) => {
+      if (L) {
+        const parentSlot = (id) => { const ps = story.steps.filter((t) => t.to === id && slot[t.from] !== undefined).map((t) => slot[t.from]); return ps.length ? ps.reduce((a, b) => a + b, 0) / ps.length : 0; };
+        layer.sort((a, b) => parentSlot(a) - parentSlot(b));
+      }
+      layer.forEach((id, k) => { slot[id] = k - (layer.length - 1) / 2; });
+    });
+    return { layers, depth, slot };
   }
 
-  // A winding path: rows of four (two on a phone), each row running back the other way, like a board game.
-  const COLS = matchMedia('(max-width: 520px)').matches ? 2 : 4;
-  const svg = $('map'), order = storyOrder(), pos = {}, NW = 66, NH = 44, ROW = 104;
-  const rows = Math.ceil(order.length / COLS), VW = 420, VH = rows * ROW + 16;
+  // Across the page on a wide screen, down the page on a phone.
+  const tall = matchMedia('(max-width: 520px)').matches;
+  const svg = $('map'), { layers, depth, slot } = storyOrder(), pos = {}, NW = 66, NH = 44;
+  const STEP = tall ? 92 : 108, SPREAD = tall ? 150 : 82, widest = Math.max(...layers.map((l) => l.length));
+  const VW = tall ? Math.max(360, widest * SPREAD + 40) : layers.length * STEP + 20, VH = tall ? layers.length * STEP + 10 : widest * SPREAD + 30;
   svg.setAttribute('viewBox', `0 0 ${VW} ${VH}`);
-  order.forEach((id, i) => {
-    const row = Math.floor(i / COLS), col = row % 2 ? COLS - 1 - (i % COLS) : i % COLS;
-    const margin = Math.max(54, VW / (COLS * 2));
-    pos[id] = { x: margin + col * ((VW - 2 * margin) / (COLS - 1)), y: 40 + row * ROW };
-  });
-  const center = { x: VW / 2, y: VH / 2 }, rank = Object.fromEntries(order.map((id, i) => [id, i]));
+  for (const [id, k] of Object.entries(slot)) {
+    const along = 10 + STEP / 2 + depth[id] * STEP - (tall ? 10 : 0), across = (tall ? VW : VH - 14) / 2 + k * SPREAD;
+    pos[id] = tall ? { x: across, y: along } : { x: along, y: across };
+  }
+  const center = { x: VW / 2, y: VH / 2 };
   const edgeLayer = el('g', {}, svg), nodeLayer = el('g', {}, svg), edges = [], nodes = {};
   const clip = (from, to) => { const dx = to.x - from.x, dy = to.y - from.y, t = Math.min((NW / 2 + 4) / Math.abs(dx || 1e-9), (NH / 2 + 4) / Math.abs(dy || 1e-9)); return { x: from.x + dx * t, y: from.y + dy * t }; };
   for (const s of story.steps) {
     const a = pos[s.from], b = pos[s.to];
     const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, out = { x: mid.x - center.x, y: mid.y - center.y }, len = Math.hypot(out.x, out.y) || 1;
-    const bend = Math.abs(rank[s.to] - rank[s.from]) > 1 ? 66 : 0, c = { x: mid.x + (out.x / len) * bend, y: mid.y + (out.y / len) * bend };
+    const bend = Math.abs(depth[s.to] - depth[s.from]) > 1 ? 66 : 0, c = { x: mid.x + (out.x / len) * bend, y: mid.y + (out.y / len) * bend };
     const p0 = clip(a, c), p1 = clip(b, c);
     const path = el('path', { class: 'edge', d: `M${p0.x},${p0.y} Q${c.x},${c.y} ${p1.x},${p1.y}` }, edgeLayer);
     const ang = Math.atan2(p1.y - c.y, p1.x - c.x), k = 8;
