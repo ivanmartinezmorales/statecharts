@@ -27,7 +27,7 @@ export interface Effort {
 export function effort(m: Model): Effort {
   const total = m.steps.reduce((sum, s) => sum + minutes[s.kind], 0);
   const hard = m.steps.filter((s) => tricky.has(s.kind)).length;
-  const difficulty = hard >= 3 || m.steps.length >= 14 ? 3 : hard >= 1 || m.steps.length >= 8 ? 2 : 1;
+  const difficulty = hard >= 3 || m.steps.length >= 14 ? 3 : hard >= 1 || m.steps.length >= 6 ? 2 : 1;
   return { minutes: Math.max(1, Math.round(total)), difficulty };
 }
 

@@ -10,7 +10,7 @@ use wasm_bindgen::prelude::*;
 
 use geom::{build_stages, Stage, Step, V2};
 use raster::{rgb, Canvas};
-use scene::{draw, fit_view, mat, Camera, Dot, Frame2d, Palette, View, PIXELS};
+use scene::{draw, fit_view, lerp_view, mat, Camera, Dot, Frame2d, Palette, View, PIXELS};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -32,7 +32,8 @@ pub fn pixels() -> usize {
 pub struct Diagram {
     model: Model,
     stages: Vec<Stage>,
-    view: View,
+    /// One framing per step, so the paper fills the frame as it gets smaller.
+    views: Vec<View>,
     canvas: Canvas,
     mat: Option<([u32; 2], Canvas)>,
 }
@@ -48,8 +49,12 @@ impl Diagram {
             return Err(JsError::new("model: needs a paper shape and at least one step"));
         }
         let stages = build_stages(&model.paper, &model.steps);
-        let view = fit_view(if fit_finished { &stages[stages.len() - 1..] } else { &stages });
-        Ok(Diagram { model, stages, view, canvas: Canvas::new(PIXELS), mat: None })
+        let views = if fit_finished {
+            vec![fit_view(&stages[stages.len() - 1..]); stages.len()]
+        } else {
+            stages.iter().map(|s| fit_view(std::slice::from_ref(s))).collect()
+        };
+        Ok(Diagram { model, stages, views, canvas: Canvas::new(PIXELS), mat: None })
     }
 
     #[wasm_bindgen(getter)]
@@ -82,7 +87,8 @@ impl Diagram {
             stage: &self.stages[i],
             step: &self.model.steps[i],
             t: t.clamp(0.0, 1.0),
-            view: self.view,
+            // Ease from the previous step's framing over the first part of this one.
+            view: if i == 0 { self.views[0] } else { lerp_view(self.views[i - 1], self.views[i], (t * 3.0).clamp(0.0, 1.0)) },
             white_up: self.model.white_up,
             cam: Camera { yaw, pitch },
             dots: if show_dots { &self.model.dots } else { &[] },

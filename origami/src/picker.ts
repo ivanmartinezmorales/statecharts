@@ -46,11 +46,12 @@ const LAPSE_MS = 240;
  * Draws a model's finished shape at a three-quarter angle. On hover it folds itself from a flat
  * sheet in a quick time-lapse, then keeps turning.
  */
-export function preview(canvas: HTMLCanvasElement, model: Model) {
+export function preview(canvas: HTMLCanvasElement, model: Model, featured = false) {
   const finished = new PaperCanvas(canvas, model, true);
   let whole: PaperCanvas | null = null;
   const last = model.steps.length - 1;
-  const cam: Camera = { yaw: -0.45, pitch: 0.5 };
+  // Tiles are top-down like a diagram; the featured model tilts and turns slowly on the mat.
+  const cam: Camera = featured ? { yaw: -0.3, pitch: 0.5 } : { yaw: 0, pitch: 0 };
   let raf = 0;
   let then = 0;
   let elapsed = 0;
@@ -59,7 +60,7 @@ export function preview(canvas: HTMLCanvasElement, model: Model) {
   const tick = (now: number) => {
     const dt = Math.min(50, now - then);
     then = now;
-    cam.yaw += dt * 0.0008;
+    if (featured) cam.yaw += dt * 0.0005;
     if (lapse) {
       elapsed += dt;
       const step = Math.floor(elapsed / LAPSE_MS);
@@ -190,8 +191,8 @@ export function picker(app: HTMLElement, filter: Filter): () => void {
           <button class="button surprise" type="button">${left ? 'Surprise me' : 'Fold one again'}</button>
         </div>
       </header>
-      ${isAll && !done.size && !welcomed() ? welcome() : ''}
       ${isAll ? featured(nextUp(), foldOfTheDay()) : ''}
+      ${isAll && !done.size && !welcomed() ? welcome() : ''}
       ${shelves(filter)}
     </div>`;
 
@@ -206,7 +207,7 @@ export function picker(app: HTMLElement, filter: Filter): () => void {
   const motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
   const previews = [...app.querySelectorAll<HTMLElement>('[data-slug]')].map((el) => {
     const model = all.find((m) => m.slug === el.dataset.slug)!;
-    const p = preview(el.querySelector('canvas')!, model);
+    const p = preview(el.querySelector('canvas')!, model, el.classList.contains('up-next-art'));
     if (el.classList.contains('up-next-art')) p.play(motion, motion);
     else {
       el.addEventListener('pointerenter', () => p.play(true, motion));

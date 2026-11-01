@@ -168,18 +168,18 @@ kbd {
   flex: 0 0 auto;
 }
 
-/* The track between stations is a crease: dashed until you finish the level, then folded flat. */
+/* The track between stations: a faint line that turns solid ink once the level is finished. */
 .station:not(:last-child)::after {
   content: '';
   flex: 1;
   min-width: 16px;
   margin: 0 12px;
-  border-top: 2px dashed var(--ink-3);
-  opacity: 0.45;
+  border-top: 1px solid var(--ink-3);
+  opacity: 0.35;
 }
 
 .station.complete::after {
-  border-top-style: solid;
+  border-top-width: 2px;
   border-color: var(--ink);
   opacity: 1;
 }
@@ -272,8 +272,13 @@ h2 {
 }
 
 .filters {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+  flex-wrap: nowrap;
   display: inline-flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 4px;
   padding: 4px;
   border-radius: 10px;
@@ -281,6 +286,7 @@ h2 {
 }
 
 .filters a {
+  flex: none;
   padding: 6px 14px;
   border-radius: 6px;
   font-size: 15px;
@@ -699,8 +705,30 @@ a.tile:hover .tile-name {
 .ws-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 32px;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    'stage brief'
+    'stage panel';
+  gap: 16px 32px;
   align-items: start;
+}
+
+.stage {
+  grid-area: stage;
+}
+
+.brief {
+  grid-area: brief;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px 24px 20px;
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.panel {
+  grid-area: panel;
 }
 
 .stage {
@@ -1079,6 +1107,19 @@ a.tile:hover .tile-name {
   }
 }
 
+@media (max-width: 1100px) {
+  .bar-row {
+    gap: 20px;
+  }
+  .station-count {
+    display: none;
+  }
+  .station:not(:last-child)::after {
+    min-width: 10px;
+    margin: 0 8px;
+  }
+}
+
 @media (max-width: 880px) {
   .bar-row {
     padding: 12px 16px;
@@ -1136,7 +1177,23 @@ a.tile:hover .tile-name {
   }
   .ws-body {
     grid-template-columns: 1fr;
-    gap: 16px;
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      'brief'
+      'stage'
+      'panel';
+    gap: 12px;
+  }
+  .brief {
+    padding: 16px;
+    gap: 8px;
+  }
+  .brief .instruction {
+    min-height: 0;
+    font-size: 18px;
+  }
+  .stage {
+    width: min(100%, 46vh);
   }
   .stage {
     width: 100%;

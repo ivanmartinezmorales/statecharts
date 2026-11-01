@@ -2,6 +2,7 @@ import { v, type Dot, type Only, type Step, type Vec2 } from './diagram';
 import { advanced, techniques } from './advanced';
 import { menagerie } from './menagerie';
 import { zoo } from './zoo';
+import { effort } from './effort';
 
 export type Level = 'basics' | 'beginner' | 'intermediate' | 'advanced';
 export type Topic = 'technique' | 'animal' | 'flower' | 'thing';
@@ -776,7 +777,11 @@ const models: Model[] = [
   },
 ];
 
-export const all: readonly Model[] = [...basics, ...techniques, ...models, ...menagerie, ...zoo, ...advanced];
+/** Levels follow the effort estimate, so each shelf holds models of a similar difficulty. */
+const leveled = (m: Model): Model =>
+  m.level === 'basics' ? m : { ...m, level: (['beginner', 'intermediate', 'advanced'] as const)[effort(m).difficulty - 1]! };
+
+export const all: readonly Model[] = [...basics, ...techniques, ...models, ...menagerie, ...zoo, ...advanced].map(leveled);
 
 export const upcoming: readonly Upcoming[] = [
 ];

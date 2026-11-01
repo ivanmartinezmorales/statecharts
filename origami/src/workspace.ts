@@ -42,6 +42,9 @@ const tips: Record<Step['kind'], string> = {
 /** Paper starts and stops gently: the fold clock stays linear, only what is drawn eases. */
 const eased = (t: number) => t * t * (3 - 2 * t);
 
+/** How far the mat can tilt: past a right angle, so you can look at the paper from underneath. */
+const TILT = Math.PI - 0.2;
+
 /** First sentence of a step, for the step list. */
 const short = (text: string) => text.split(/(?<=\.)\s/)[0]!.replace(/\.$/, '');
 
@@ -51,7 +54,8 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
   const next = all[all.indexOf(model) + 1];
   const last = steps.length - 1;
   // Start at a three-quarter angle so the paper reads in 3D; Top view flattens it like a printed diagram.
-  const cam: Camera = { yaw: -0.32, pitch: 0.48 };
+  // Open at a three-quarter view so the paper reads in 3D; Top view flattens it like a printed diagram.
+  const cam: Camera = { yaw: -0.25, pitch: 0.5 };
   let i = Math.max(0, Math.min(last, start));
   let t = 0;
   const e = effort(model);
@@ -92,7 +96,7 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
           </div>
           <span class="hint">Drag the paper to look around</span>
         </figure>
-        <aside class="panel">
+        <div class="brief">
           <p class="step-count" aria-live="polite"></p>
           <p class="instruction"></p>
           <a class="symbol"></a>
@@ -100,6 +104,8 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
             <summary>Tip for this fold</summary>
             <p></p>
           </details>
+        </div>
+        <aside class="panel">
           <div class="controls">
             <button class="prev" aria-label="Previous step">${icons.left}</button>
             <button class="play"></button>
@@ -262,7 +268,7 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
     if (spinning) cam.yaw += dt * 0.0011;
     if (coasting) {
       cam.yaw += vel.yaw * dt;
-      cam.pitch = Math.max(-1.45, Math.min(1.45, cam.pitch + vel.pitch * dt));
+      cam.pitch = Math.max(-TILT, Math.min(TILT, cam.pitch + vel.pitch * dt));
       const slow = Math.exp(-dt / 320);
       vel.yaw *= slow;
       vel.pitch *= slow;
@@ -368,7 +374,7 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
   canvas.addEventListener('pointermove', (e) => {
     if (!drag) return;
     const yaw = drag.yaw + (e.clientX - drag.x) * 0.012;
-    const pitch = Math.max(-1.45, Math.min(1.45, drag.pitch - (e.clientY - drag.y) * 0.012));
+    const pitch = Math.max(-TILT, Math.min(TILT, drag.pitch - (e.clientY - drag.y) * 0.012));
     const ms = e.timeStamp - drag.at;
     if (ms > 0) {
       // Blend recent samples so one jittery event cannot fling the paper.

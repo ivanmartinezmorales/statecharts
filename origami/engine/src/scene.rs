@@ -19,12 +19,17 @@ pub struct View {
     pub size: f64,
 }
 
-/// A square view that fits every given stage, so the paper never jumps between steps.
+/// A square view that fits every given stage, before and after its fold.
 pub fn fit_view(stages: &[Stage]) -> View {
     let b = bounds(stages.iter().flat_map(|s| s.faces.iter().chain(&s.after)));
-    let size = (b.max.x - b.min.x).max(b.max.y - b.min.y) * 1.3;
+    let size = (b.max.x - b.min.x).max(b.max.y - b.min.y) * 1.35;
     let c = b.center();
     View { min: V2::new(c.x - size / 2.0, c.y - size / 2.0), size }
+}
+
+/// A view part way between two, for a smooth zoom from one step's framing to the next.
+pub fn lerp_view(a: View, b: View, t: f64) -> View {
+    View { min: a.min.lerp(b.min, t), size: a.size + (b.size - a.size) * t }
 }
 
 /// Orbit angles in radians; 0, 0 looks straight down at the table like a printed diagram.
@@ -70,12 +75,14 @@ fn ease(t: f64) -> f64 {
     }
 }
 
+/// Yaw spins the paper flat on the mat; pitch then tilts the mat toward you. Flat paper is never
+/// seen edge-on by spinning alone, and pitching past a right angle shows its underside.
 fn orbit(d: V3, cam: Camera) -> V3 {
     let (sy, cy) = cam.yaw.sin_cos();
     let (sp, cp) = cam.pitch.sin_cos();
-    let x = d.x * cy + d.z * sy;
-    let z = -d.x * sy + d.z * cy;
-    V3 { x, y: d.y * cp - z * sp, z: d.y * sp + z * cp }
+    let x = d.x * cy - d.y * sy;
+    let y = d.x * sy + d.y * cy;
+    V3 { x, y: y * cp - d.z * sp, z: y * sp + d.z * cp }
 }
 
 /// Faces that share one plane: their stacking order is their layer order, seen from the plane's front.
