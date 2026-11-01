@@ -63,7 +63,7 @@ function shelf(level: (typeof levels)[number]) {
   const models = all.filter((m) => m.level === level.level);
   const count = models.length ? `<span class="shelf-count">${models.filter((m) => done.has(m.slug)).length} of ${models.length} folded</span>` : '';
   const tiles =
-    level.level === 'advanced' ? upcoming.map((u) => soon(u.name, u.about)).join('') : models.map(tile).join('');
+    models.map(tile).join('') + (level.level === 'advanced' ? upcoming.map((u) => soon(u.name, u.about)).join('') : '');
   return `<section class="shelf" id="${level.level}">
       <h2>${level.title}${count}</h2>
       <div class="grid">${tiles}</div>

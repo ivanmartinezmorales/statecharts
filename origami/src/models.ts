@@ -1,4 +1,5 @@
 import { v, type Dot, type Only, type Step, type Vec2 } from './diagram';
+import { advanced, techniques } from './advanced';
 
 export type Level = 'basics' | 'beginner' | 'intermediate' | 'advanced';
 
@@ -754,11 +755,9 @@ const models: Model[] = [
   },
 ];
 
-export const all: readonly Model[] = [...basics, ...models];
+export const all: readonly Model[] = [...basics, ...techniques, ...models, ...advanced];
 
 export const upcoming: readonly Upcoming[] = [
-  { name: 'Crane', about: 'Squash and petal folds' },
-  { name: 'Jumping frog', about: 'Pleats and reverse folds' },
   { name: 'Lily', about: 'Frog base and curling' },
 ];
 
