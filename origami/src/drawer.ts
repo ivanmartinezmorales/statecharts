@@ -57,5 +57,5 @@ export function drawer(app: HTMLElement): () => void {
     el.addEventListener('blur', () => p.play(false));
     return p;
   });
-  return () => previews.forEach((p) => p.play(false));
+  return () => previews.forEach((p) => p.destroy());
 }

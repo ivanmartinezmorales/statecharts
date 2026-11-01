@@ -2,7 +2,7 @@
 // four diagonals. Each stop holds still for most of its screen, then the last stretch moves to the next: around the
 // same diorama it pans and zooms; to another diorama it zooms out over the row of plinths, pans across and zooms in.
 
-import type { Frame, V3 } from './engine'
+import type { Frame, V3 } from '../../rendering/plane/web/engine'
 import type { View } from './tour'
 
 /** The part of the frame the card leaves free, in framebuffer pixels. */

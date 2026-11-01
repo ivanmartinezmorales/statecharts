@@ -1,6 +1,6 @@
 // Animal faces, flowers and a butterfly. Most start from a diamond: a square with a corner at the top.
 
-import { v, type Line, type Step, type Vec2 } from './diagram';
+import { v, type Line, type Step, type Vec2 } from '../../rendering/origami/model';
 import type { Model } from './models';
 
 const diamond = [v(50, 0), v(100, 50), v(50, 100), v(0, 50)];

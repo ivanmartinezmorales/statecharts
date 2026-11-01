@@ -10,11 +10,12 @@ pub fn room(c: &mut Canvas, cam: &Cam, t: f32) {
     let (w, h) = (c.w, c.h);
     let pitch = cam.pitch;
     let turn = cam.yaw;
+    let waves: Vec<f32> = (0..w).map(|x| (x as f32 / w as f32 * 3.0 + turn * 2.0).sin() * 0.03).collect();
     for y in 0..h {
         // looking down at a diorama shows more of the dark top of the sky
         let u = (y as f32 / h as f32 + 0.35 - pitch * 0.45).clamp(0.0, 1.0);
-        for x in 0..w {
-            let wave = ((x as f32 / w as f32 * 3.0 + turn * 2.0).sin() * 0.03) + u;
+        for (x, wave) in waves.iter().enumerate() {
+            let wave = wave + u;
             c.px[y * w + x] = ramp(&SKY, wave.clamp(0.0, 1.0), x as i32, y as i32);
         }
     }

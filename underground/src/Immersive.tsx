@@ -1,3 +1,4 @@
+import { createRenderLoop } from '../../rendering/browser/loop.mjs'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useReducedMotion } from './kit/reduced-motion'
 import { LAYERS } from './layers'
@@ -157,7 +158,6 @@ export function Immersive({ index, from, sliceRect, onIndex, onClosed }: Props) 
 
   // The camera loop: the tween, or the eased pan; then the picture, the shades, the labels and the progress bar
   useEffect(() => {
-    let raf = 0
     const tick = (now: number) => {
       const w = innerWidth, h = innerHeight, tw = tween.current, p = pan.current
       if (tw) {
@@ -191,10 +191,9 @@ export function Immersive({ index, from, sliceRect, onIndex, onClosed }: Props) 
         if (ln) { ln.setAttribute('x1', `${at.x}`); ln.setAttribute('y1', `${at.y}`); ln.setAttribute('x2', `${tip.x}`); ln.setAttribute('y2', `${tip.y}`) }
         if (dot) dot.style.transform = `translate(${at.x}px, ${at.y}px)`
       })
-      raf = requestAnimationFrame(tick)
     }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    const loop = createRenderLoop(tick, { element: root.current! })
+    return () => loop.destroy()
   }, [index, phase, reduced])
 
   return (

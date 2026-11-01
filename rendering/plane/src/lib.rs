@@ -126,6 +126,19 @@ pub extern "C" fn glow() -> *const u32 {
 pub extern "C" fn bloom() -> *const u32 {
     with(|c| c.bloom.as_ptr())
 }
+/// Skip CPU blur when the compositor consumes the unclamped half-size light buffer.
+#[no_mangle]
+pub extern "C" fn gpu_bloom(enabled: u32) {
+    with(|c| c.gpu_bloom = enabled != 0);
+}
+#[no_mangle]
+pub extern "C" fn bloom_source() -> *const f32 {
+    with(|c| c.half.as_ptr().cast())
+}
+#[no_mangle]
+pub extern "C" fn bloom_kernel() -> *const f32 {
+    with(|c| c.bloom_kernel.as_ptr())
+}
 #[no_mangle]
 pub extern "C" fn bloom_width() -> u32 {
     with(|c| c.bw as u32)

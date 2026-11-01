@@ -1,3 +1,4 @@
+import { createRenderLoop } from '../../rendering/browser/loop.mjs'
 // Everything that moves in the cutaway, drawn at the picture's own pixels (320 x 480) over the still picture:
 // the road crew, the boiler's fire, a worm, the wastewater, drips, the house drain, the sewer worker and two rats,
 // the subway train, the water in the deep tunnel, and the rain over the street; all of it in the noir grade.
@@ -6,7 +7,7 @@
 // shows part of the cutaway copies its part from it. `anchors` says where the moving things are now, for labels
 // that follow them.
 
-import { gradeCanvas, rain } from './noir.js'
+import { gradeCanvas, rain } from '../../rendering/filters/noir.mjs'
 
 export const W = 320, H = 480, FPS = 12
 type G = CanvasRenderingContext2D
@@ -181,21 +182,14 @@ const master = document.createElement('canvas')
 master.width = W
 master.height = H
 const ctx = master.getContext('2d', { willReadFrequently: true })!
-const viewers = new Set<() => void>()
-let raf = 0, last = -1
+let last = -1
 
-function tick(now: number) {
-  const f = Math.floor(now / (1000 / FPS))
-  if (f !== last) { last = f; draw(ctx, now / 1000); viewers.forEach((v) => v()) }
-  raf = requestAnimationFrame(tick)
-}
-
-/** Calls `paint(master)` on every new frame (or once, still, when `still`), until the returned function is called. */
-export function watch(paint: (master: HTMLCanvasElement) => void, still: boolean) {
-  if (still) { draw(ctx, 4); paint(master); return () => {} }
-  const v = () => paint(master)
-  viewers.add(v)
-  if (viewers.size === 1) raf = requestAnimationFrame(tick)
-  else v()
-  return () => { viewers.delete(v); if (!viewers.size) cancelAnimationFrame(raf) }
+/** Paint only visible viewers; all viewers share one draw for each animation frame. */
+export function watch(paint: (master: HTMLCanvasElement) => void, still: boolean, element: Element) {
+  const loop = createRenderLoop((now) => {
+    const f = still ? -2 : Math.floor(now / (1000 / FPS))
+    if (f !== last) { last = f; draw(ctx, still ? 4 : now / 1000) }
+    paint(master)
+  }, { element, fps: FPS, continuous: !still })
+  return loop.destroy
 }

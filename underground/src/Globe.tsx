@@ -1,9 +1,11 @@
+import { createWebGLSurface } from '../../rendering/browser/webgl'
+import { createRenderLoop } from '../../rendering/browser/loop.mjs'
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { useReducedMotion } from './kit/reduced-motion'
 import { Detail } from './Detail'
 import { LookInside } from './Journey'
-import { gradeCanvas } from './noir.js'
+import { gradeCanvas } from '../../rendering/filters/noir.mjs'
 
 // The internet beyond the shore: a pixelated globe wrapped in its undersea cables, with light pulsing along every
 // one. Scrolling flies the camera: down into the sea off New York, across the Atlantic with one pulse of light to
@@ -167,9 +169,7 @@ export function Globe({ onBack, onClose }: { onBack: () => void; onClose: () => 
     const el = host.current
     if (!el) return
     const renderer = new THREE.WebGLRenderer({ antialias: false })
-    renderer.setPixelRatio(1)
     renderer.setClearColor(0x050508)
-    el.appendChild(renderer.domElement)
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(40, 1, 0.01, 50)
     scene.add(new THREE.AmbientLight(0xa0a2a8, 0.35))
@@ -211,17 +211,17 @@ export function Globe({ onBack, onClose }: { onBack: () => void; onClose: () => 
 
     const pointAlong = (pts: THREE.Vector3[], u: number) => { const f = Math.max(0, Math.min(1, u)) * (pts.length - 1), i = Math.floor(f); return pts[i].clone().lerp(pts[Math.min(pts.length - 1, i + 1)], f - i) }
 
-    const size = () => {
-      renderer.setSize(Math.max(1, Math.round(innerWidth / PIX)), Math.max(1, Math.round(innerHeight / PIX)), false)
-      camera.aspect = innerWidth / innerHeight
+    const surface = createWebGLSurface(renderer, el, PIX, (w, h) => {
+      camera.aspect = w / h
       camera.updateProjectionMatrix()
-    }
-    size()
-    addEventListener('resize', size)
+    })
 
-    let raf = 0
+    let previous = ''
     const tick = (now: number) => {
       const t = now / 1000, p = progress.current
+      const key = `${p.target}:${innerWidth}:${innerHeight}`
+      if (reduced && key === previous) return
+      previous = key
       p.now += (p.target - p.now) * (reduced ? 1 : 0.06)
       // the bright pulse rides across between the second and third stops, and stays on the far shore after
       const ride = Math.max(0, Math.min(1, (p.now - 0.2) / 0.38))
@@ -242,16 +242,13 @@ export function Globe({ onBack, onClose }: { onBack: () => void; onClose: () => 
       if (bar.current) bar.current.style.transform = `scaleX(${p.now})`
       let s = 0; GLOBE_STOPS.forEach((st, i) => { if (p.now >= st.at - 0.03) s = i })
       setStop((was) => (was === s ? was : s))
-      raf = requestAnimationFrame(tick)
     }
-    raf = requestAnimationFrame(tick)
+    const loop = createRenderLoop(tick, { element: el })
     return () => {
-      cancelAnimationFrame(raf)
-      removeEventListener('resize', size)
+      loop.destroy()
       scene.traverse((o) => { const m = o as THREE.Mesh; m.geometry?.dispose(); const mat = m.material as THREE.Material | undefined; mat?.dispose() })
       tex.dispose()
-      renderer.dispose()
-      renderer.domElement.remove()
+      surface.destroy()
     }
   }, [reduced])
 

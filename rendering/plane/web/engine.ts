@@ -27,6 +27,9 @@ type Exports = {
   picture: () => number
   glow: () => number
   bloom: () => number
+  gpu_bloom: (enabled: number) => void
+  bloom_source: () => number
+  bloom_kernel: () => number
   bloom_width: () => number
   bloom_height: () => number
   origins: () => number
@@ -39,16 +42,19 @@ export type Engine = {
   size: () => { w: number; h: number; bw: number; bh: number }
   /** Where each diorama stands in the world. */
   origins: V3[]
+  setGpuBloom: (enabled: boolean) => void
+  bloomInput: () => { light: Float32Array; kernel: Float32Array }
   /** The last frame's layers, as views into the engine's memory: valid until the next draw or resize. */
   layers: () => { picture: Uint8ClampedArray; glow: Uint8ClampedArray; bloom: Uint8ClampedArray }
 }
 
 const ORDER: (keyof Frame)[] = ['scene', 'tx', 'ty', 'tz', 'yaw', 'pitch', 'dist', 'explode', 'focus', 'flows', 'anim', 'fade']
 
-export async function loadEngine(url = '/engine.wasm'): Promise<Engine> {
-  const { instance } = await WebAssembly.instantiateStreaming(fetch(url), {})
+export async function loadEngine(url = '/engine.wasm', signal?: AbortSignal): Promise<Engine> {
+  const { instance } = await WebAssembly.instantiateStreaming(fetch(url, { signal }), {})
   const x = instance.exports as unknown as Exports
   let w = 1, h = 1
+  let gpuBloom = false
   const view = (ptr: number, n: number) => new Uint8ClampedArray(x.memory.buffer, ptr, n * 4)
   const table = new Float32Array(x.memory.buffer, x.origins(), x.origin_count() * 3)
   const origins = Array.from({ length: x.origin_count() }, (_, i) => [table[3 * i], table[3 * i + 1], table[3 * i + 2]] as V3)
@@ -58,7 +64,16 @@ export async function loadEngine(url = '/engine.wasm'): Promise<Engine> {
       w = Math.max(1, nw)
       h = Math.max(1, nh)
       x.resize(w, h)
+      x.gpu_bloom(gpuBloom ? 1 : 0)
     },
+    setGpuBloom(enabled) {
+      gpuBloom = enabled
+      x.gpu_bloom(enabled ? 1 : 0)
+    },
+    bloomInput: () => ({
+      light: new Float32Array(x.memory.buffer, x.bloom_source(), x.bloom_width() * x.bloom_height() * 3),
+      kernel: new Float32Array(x.memory.buffer, x.bloom_kernel(), 20),
+    }),
     draw(f, t) {
       const p = new Float32Array(x.memory.buffer, x.params(), 16)
       ORDER.forEach((k, i) => (p[i] = f[k]))

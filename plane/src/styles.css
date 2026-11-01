@@ -22,6 +22,7 @@ body { margin: 0; color: var(--ink); font: 17px/1.6 var(--text); background: var
 /* the picture, behind everything */
 .stage { position: fixed; inset: 0; z-index: 0; }
 .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.stage canvas[hidden] { display: none; }
 .stage__pic, .stage__glow { image-rendering: pixelated; }
 .stage__glow, .stage__bloom { mix-blend-mode: screen; }
 .stage__bloom { filter: brightness(1.5) saturate(1.2); }

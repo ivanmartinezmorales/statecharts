@@ -69,6 +69,8 @@ async function buildStory(story) {
   for (const s of stories) built.push(await buildStory(s));
   fs.writeFileSync(path.join(DIST, 'story.json'), JSON.stringify(built[0], null, 2));
   for (const f of fs.readdirSync(SRC)) fs.copyFileSync(path.join(SRC, f), path.join(DIST, f));
+  fs.copyFileSync(path.join(__dirname, '../rendering/browser/loop.mjs'), path.join(DIST, 'render-loop.mjs'));
+  fs.copyFileSync(path.join(__dirname, '../rendering/browser/bloom.mjs'), path.join(DIST, 'bloom.mjs'));
   for (const b of built) console.log(`${b.title}: ${b.states.length} scenes, ${b.steps.length} steps, ${b.rules.length} rules`);
   console.log(`Wrote ${DIST}`);
 })().catch((e) => { console.error(e.message); process.exit(1); });

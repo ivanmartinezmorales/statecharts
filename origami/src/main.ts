@@ -4,7 +4,7 @@ import { picker, topics, type Filter } from './picker';
 import { workspace } from './workspace';
 import { drawer } from './drawer';
 import { done } from './progress';
-import { ready } from './engine';
+import { ready } from '../../rendering/origami/browser';
 
 const app = document.querySelector<HTMLElement>('#app')!;
 const bar = document.querySelector<HTMLElement>('#bar')!;

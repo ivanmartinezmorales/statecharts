@@ -1,5 +1,5 @@
 // The shape of a model as the fold engine reads it. Everything here is plain data, serialized to
-// JSON and folded by the Rust engine in ../engine.
+// JSON and folded by the Rust engine in this directory.
 
 export type Vec2 = { x: number; y: number };
 export type Line = readonly [Vec2, Vec2];
@@ -68,4 +68,11 @@ export interface Dot {
   readonly x: number;
   readonly y: number;
   readonly r: number;
+}
+
+export interface PaperModel {
+  readonly paper: readonly Vec2[];
+  readonly whiteUp: boolean;
+  readonly steps: readonly Step[];
+  readonly dots?: readonly Dot[];
 }

@@ -1,0 +1,1975 @@
+{
+  "baseline": "1015147c8598937ec5cb0e41af8b8d642a5fbbf1",
+  "fixtures": [
+    {
+      "name": "valley-fold",
+      "data": {
+        "paper": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 100,
+            "y": 0
+          },
+          {
+            "x": 100,
+            "y": 100
+          },
+          {
+            "x": 0,
+            "y": 100
+          }
+        ],
+        "whiteUp": true,
+        "steps": [
+          {
+            "kind": "valley",
+            "line": [
+              {
+                "x": 0,
+                "y": 50
+              },
+              {
+                "x": 100,
+                "y": 50
+              }
+            ],
+            "move": {
+              "x": 50,
+              "y": 100
+            },
+            "text": "A dashed line is a valley fold. The paper folds toward you, so the crease sinks like a valley. Bring the bottom edge up to the top."
+          }
+        ]
+      },
+      "finished": false,
+      "snapshots": [
+        {
+          "args": [
+            0,
+            0,
+            0,
+            0,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "58154bc75f9868ca223b71cb9f03f4bf490b502c298f9cd1d4243b8753cb1902"
+        },
+        {
+          "args": [
+            0,
+            0.4,
+            -0.3,
+            0.5,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "d7643a01fd3ec381c6b0f199ec6b8cd8f997fc32b9b4755a0abb410f4f3e8575"
+        },
+        {
+          "args": [
+            0,
+            1,
+            0.6,
+            1.2,
+            true,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "5cc0cffc294fd3b12c5cb36da8744302e44cbed8e4a07c3e6ea8780e13f28f6c"
+        }
+      ]
+    },
+    {
+      "name": "valley-fold",
+      "data": {
+        "paper": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 100,
+            "y": 0
+          },
+          {
+            "x": 100,
+            "y": 100
+          },
+          {
+            "x": 0,
+            "y": 100
+          }
+        ],
+        "whiteUp": true,
+        "steps": [
+          {
+            "kind": "valley",
+            "line": [
+              {
+                "x": 0,
+                "y": 50
+              },
+              {
+                "x": 100,
+                "y": 50
+              }
+            ],
+            "move": {
+              "x": 50,
+              "y": 100
+            },
+            "text": "A dashed line is a valley fold. The paper folds toward you, so the crease sinks like a valley. Bring the bottom edge up to the top."
+          }
+        ]
+      },
+      "finished": true,
+      "snapshots": [
+        {
+          "args": [
+            0,
+            0,
+            0,
+            0,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "58154bc75f9868ca223b71cb9f03f4bf490b502c298f9cd1d4243b8753cb1902"
+        },
+        {
+          "args": [
+            0,
+            0.4,
+            -0.3,
+            0.5,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "d7643a01fd3ec381c6b0f199ec6b8cd8f997fc32b9b4755a0abb410f4f3e8575"
+        },
+        {
+          "args": [
+            0,
+            1,
+            0.6,
+            1.2,
+            true,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "5cc0cffc294fd3b12c5cb36da8744302e44cbed8e4a07c3e6ea8780e13f28f6c"
+        }
+      ]
+    },
+    {
+      "name": "mouse",
+      "data": {
+        "paper": [
+          {
+            "x": 50,
+            "y": 0
+          },
+          {
+            "x": 100,
+            "y": 50
+          },
+          {
+            "x": 50,
+            "y": 100
+          },
+          {
+            "x": 0,
+            "y": 50
+          }
+        ],
+        "whiteUp": true,
+        "steps": [
+          {
+            "kind": "valley",
+            "line": [
+              {
+                "x": 0,
+                "y": 50
+              },
+              {
+                "x": 100,
+                "y": 50
+              }
+            ],
+            "move": {
+              "x": 50,
+              "y": 100
+            },
+            "text": "Start white side up with a corner pointing at you. Fold the bottom corner up to the top corner."
+          },
+          {
+            "id": "leftEar",
+            "kind": "valley",
+            "line": [
+              {
+                "x": 50,
+                "y": 50
+              },
+              {
+                "x": 13.898883252932642,
+                "y": 38.136019239003
+              }
+            ],
+            "move": {
+              "x": 0,
+              "y": 50
+            },
+            "text": "Fold the left corner up and out for a wide ear."
+          },
+          {
+            "id": "rightEar",
+            "kind": "valley",
+            "line": [
+              {
+                "x": 50,
+                "y": 50
+              },
+              {
+                "x": 86.10111674706735,
+                "y": 38.136019239003
+              }
+            ],
+            "move": {
+              "x": 100,
+              "y": 50
+            },
+            "text": "Fold the right corner the same way."
+          },
+          {
+            "kind": "mountain",
+            "line": [
+              {
+                "x": 8,
+                "y": 30
+              },
+              {
+                "x": 22,
+                "y": 16
+              }
+            ],
+            "move": {
+              "x": 12,
+              "y": 22
+            },
+            "text": "Fold the tip of the left ear behind to round it."
+          },
+          {
+            "kind": "mountain",
+            "line": [
+              {
+                "x": 92,
+                "y": 30
+              },
+              {
+                "x": 78,
+                "y": 16
+              }
+            ],
+            "move": {
+              "x": 88,
+              "y": 22
+            },
+            "text": "Round off the right ear too."
+          },
+          {
+            "kind": "valley",
+            "line": [
+              {
+                "x": 0,
+                "y": 20
+              },
+              {
+                "x": 100,
+                "y": 20
+              }
+            ],
+            "move": {
+              "x": 50,
+              "y": 0
+            },
+            "only": {
+              "notMovedIn": [
+                "leftEar",
+                "rightEar"
+              ]
+            },
+            "text": "Fold the top point down."
+          }
+        ],
+        "dots": [
+          {
+            "x": 41,
+            "y": 30,
+            "r": 2
+          },
+          {
+            "x": 59,
+            "y": 30,
+            "r": 2
+          },
+          {
+            "x": 50,
+            "y": 48,
+            "r": 1.8
+          }
+        ]
+      },
+      "finished": false,
+      "snapshots": [
+        {
+          "args": [
+            0,
+            0,
+            0,
+            0,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "fbf2d2e76e4ac89b7c64f833fa02d9c6da283d2e7911bf6c6965716a3b4cbb3c"
+        },
+        {
+          "args": [
+            0,
+            0.4,
+            -0.3,
+            0.5,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "4e8ac88dc45bac17e444d2327810aa7b5dd9b1c598249527c4fe36a408101afc"
+        },
+        {
+          "args": [
+            0,
+            1,
+            0.6,
+            1.2,
+            true,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "8c175408c10c1d1538e62c17850040746e0492ab76b656c81f7c0a7e6f41cc54"
+        },
+        {
+          "args": [
+            3,
+            0,
+            0,
+            0,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "38ebe8833c8ef0e1ab505b2c4f2a305bb8a904d46b1d980b99745375768ae959"
+        },
+        {
+          "args": [
+            3,
+            0.4,
+            -0.3,
+            0.5,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "8bd4b286fb16a022fd6ca40411f335d61ca8012eb0ec73f21387038c568990c3"
+        },
+        {
+          "args": [
+            3,
+            1,
+            0.6,
+            1.2,
+            true,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "8d1643b66c320413355499152794e35ca64bbf1c8c18dc94a48bb6c644913840"
+        },
+        {
+          "args": [
+            5,
+            0,
+            0,
+            0,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "9c4bd8cdc33d2a7d8bb52e3db354530f0094e0021de155733c5ba71e879e4f94"
+        },
+        {
+          "args": [
+            5,
+            0.4,
+            -0.3,
+            0.5,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "dfb3fe308151e115b12bad082c56cf5ad55a15f2a78582e7214e0b64b9e1acbd"
+        },
+        {
+          "args": [
+            5,
+            1,
+            0.6,
+            1.2,
+            true,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "57ac202789dd2f600a3830b7493c68cc1b59b2c3ad8f3486e7e33a2003a314cd"
+        }
+      ]
+    },
+    {
+      "name": "mouse",
+      "data": {
+        "paper": [
+          {
+            "x": 50,
+            "y": 0
+          },
+          {
+            "x": 100,
+            "y": 50
+          },
+          {
+            "x": 50,
+            "y": 100
+          },
+          {
+            "x": 0,
+            "y": 50
+          }
+        ],
+        "whiteUp": true,
+        "steps": [
+          {
+            "kind": "valley",
+            "line": [
+              {
+                "x": 0,
+                "y": 50
+              },
+              {
+                "x": 100,
+                "y": 50
+              }
+            ],
+            "move": {
+              "x": 50,
+              "y": 100
+            },
+            "text": "Start white side up with a corner pointing at you. Fold the bottom corner up to the top corner."
+          },
+          {
+            "id": "leftEar",
+            "kind": "valley",
+            "line": [
+              {
+                "x": 50,
+                "y": 50
+              },
+              {
+                "x": 13.898883252932642,
+                "y": 38.136019239003
+              }
+            ],
+            "move": {
+              "x": 0,
+              "y": 50
+            },
+            "text": "Fold the left corner up and out for a wide ear."
+          },
+          {
+            "id": "rightEar",
+            "kind": "valley",
+            "line": [
+              {
+                "x": 50,
+                "y": 50
+              },
+              {
+                "x": 86.10111674706735,
+                "y": 38.136019239003
+              }
+            ],
+            "move": {
+              "x": 100,
+              "y": 50
+            },
+            "text": "Fold the right corner the same way."
+          },
+          {
+            "kind": "mountain",
+            "line": [
+              {
+                "x": 8,
+                "y": 30
+              },
+              {
+                "x": 22,
+                "y": 16
+              }
+            ],
+            "move": {
+              "x": 12,
+              "y": 22
+            },
+            "text": "Fold the tip of the left ear behind to round it."
+          },
+          {
+            "kind": "mountain",
+            "line": [
+              {
+                "x": 92,
+                "y": 30
+              },
+              {
+                "x": 78,
+                "y": 16
+              }
+            ],
+            "move": {
+              "x": 88,
+              "y": 22
+            },
+            "text": "Round off the right ear too."
+          },
+          {
+            "kind": "valley",
+            "line": [
+              {
+                "x": 0,
+                "y": 20
+              },
+              {
+                "x": 100,
+                "y": 20
+              }
+            ],
+            "move": {
+              "x": 50,
+              "y": 0
+            },
+            "only": {
+              "notMovedIn": [
+                "leftEar",
+                "rightEar"
+              ]
+            },
+            "text": "Fold the top point down."
+          }
+        ],
+        "dots": [
+          {
+            "x": 41,
+            "y": 30,
+            "r": 2
+          },
+          {
+            "x": 59,
+            "y": 30,
+            "r": 2
+          },
+          {
+            "x": 50,
+            "y": 48,
+            "r": 1.8
+          }
+        ]
+      },
+      "finished": true,
+      "snapshots": [
+        {
+          "args": [
+            0,
+            0,
+            0,
+            0,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "a1e01182aaccf8eba1cb16d383867ddf690dfdbf4511fae99781decc21d12c3e"
+        },
+        {
+          "args": [
+            0,
+            0.4,
+            -0.3,
+            0.5,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "7017b200841487b1df9226d2acc02f496a39556a47ac542bfe2add13e57fca6a"
+        },
+        {
+          "args": [
+            0,
+            1,
+            0.6,
+            1.2,
+            true,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "0871e4b859820b5c2c750c114fd0f4b7cb9445ca9e834418dac17fdd5257ed80"
+        },
+        {
+          "args": [
+            3,
+            0,
+            0,
+            0,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "40b29f7d6404c491f6a08f32ebdb51aa95f7f82ea9d47e17b21bdfe11aa1cd54"
+        },
+        {
+          "args": [
+            3,
+            0.4,
+            -0.3,
+            0.5,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "8d703db227e74e87834022e1a0da47d1cd41383795214a0b305e1289472b201e"
+        },
+        {
+          "args": [
+            3,
+            1,
+            0.6,
+            1.2,
+            true,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "23392f8a1e048dbd2b457cfb665b4c468738fe040df61359f653d0408cc5ed1a"
+        },
+        {
+          "args": [
+            5,
+            0,
+            0,
+            0,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "0425cb9426bdddc4b0a92e060ae7acfc37471158e0b07f209436b3f5c9bb47fc"
+        },
+        {
+          "args": [
+            5,
+            0.4,
+            -0.3,
+            0.5,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "dfb3fe308151e115b12bad082c56cf5ad55a15f2a78582e7214e0b64b9e1acbd"
+        },
+        {
+          "args": [
+            5,
+            1,
+            0.6,
+            1.2,
+            true,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "57ac202789dd2f600a3830b7493c68cc1b59b2c3ad8f3486e7e33a2003a314cd"
+        }
+      ]
+    },
+    {
+      "name": "jumping-frog",
+      "data": {
+        "paper": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 60,
+            "y": 0
+          },
+          {
+            "x": 60,
+            "y": 100
+          },
+          {
+            "x": 0,
+            "y": 100
+          }
+        ],
+        "whiteUp": true,
+        "steps": [
+          {
+            "kind": "crease",
+            "line": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 60,
+                "y": 60
+              }
+            ],
+            "move": {
+              "x": 60,
+              "y": 0
+            },
+            "text": "Use an index card, short edge on top. Fold the top left corner down to the right edge, then unfold."
+          },
+          {
+            "kind": "crease",
+            "line": [
+              {
+                "x": 60,
+                "y": 0
+              },
+              {
+                "x": 0,
+                "y": 60
+              }
+            ],
+            "move": {
+              "x": 0,
+              "y": 0
+            },
+            "text": "Fold the top right corner down to the left edge, then unfold. The creases make an X."
+          },
+          {
+            "kind": "crease",
+            "line": [
+              {
+                "x": 0,
+                "y": 30
+              },
+              {
+                "x": 60,
+                "y": 30
+              }
+            ],
+            "move": {
+              "x": 30,
+              "y": 0
+            },
+            "text": "Fold the top edge down through the middle of the X, then unfold."
+          },
+          {
+            "kind": "collapse",
+            "parts": [
+              {
+                "line": [
+                  {
+                    "x": 30,
+                    "y": 30
+                  },
+                  {
+                    "x": 0,
+                    "y": 60
+                  }
+                ],
+                "side": {
+                  "x": 0,
+                  "y": 40
+                },
+                "only": {
+                  "within": [
+                    {
+                      "x": 0,
+                      "y": 30
+                    },
+                    {
+                      "x": 30,
+                      "y": 30
+                    },
+                    {
+                      "x": 0,
+                      "y": 60
+                    }
+                  ]
+                }
+              },
+              {
+                "line": [
+                  {
+                    "x": 0,
+                    "y": 30
+                  },
+                  {
+                    "x": 30,
+                    "y": 30
+                  }
+                ],
+                "side": {
+                  "x": 0,
+                  "y": 10
+                },
+                "only": {
+                  "within": [
+                    {
+                      "x": 0,
+                      "y": 0
+                    },
+                    {
+                      "x": 30,
+                      "y": 30
+                    },
+                    {
+                      "x": 0,
+                      "y": 30
+                    }
+                  ]
+                },
+                "over": [
+                  [
+                    {
+                      "x": 0,
+                      "y": 30
+                    },
+                    {
+                      "x": 30,
+                      "y": 30
+                    }
+                  ],
+                  [
+                    {
+                      "x": 30,
+                      "y": 30
+                    },
+                    {
+                      "x": 0,
+                      "y": 60
+                    }
+                  ]
+                ]
+              },
+              {
+                "line": [
+                  {
+                    "x": 30,
+                    "y": 30
+                  },
+                  {
+                    "x": 60,
+                    "y": 60
+                  }
+                ],
+                "side": {
+                  "x": 60,
+                  "y": 40
+                },
+                "only": {
+                  "within": [
+                    {
+                      "x": 60,
+                      "y": 30
+                    },
+                    {
+                      "x": 30,
+                      "y": 30
+                    },
+                    {
+                      "x": 60,
+                      "y": 60
+                    }
+                  ]
+                }
+              },
+              {
+                "line": [
+                  {
+                    "x": 60,
+                    "y": 30
+                  },
+                  {
+                    "x": 30,
+                    "y": 30
+                  }
+                ],
+                "side": {
+                  "x": 60,
+                  "y": 10
+                },
+                "only": {
+                  "within": [
+                    {
+                      "x": 60,
+                      "y": 0
+                    },
+                    {
+                      "x": 30,
+                      "y": 30
+                    },
+                    {
+                      "x": 60,
+                      "y": 30
+                    }
+                  ]
+                },
+                "over": [
+                  [
+                    {
+                      "x": 60,
+                      "y": 30
+                    },
+                    {
+                      "x": 30,
+                      "y": 30
+                    }
+                  ],
+                  [
+                    {
+                      "x": 30,
+                      "y": 30
+                    },
+                    {
+                      "x": 60,
+                      "y": 60
+                    }
+                  ]
+                ]
+              },
+              {
+                "line": [
+                  {
+                    "x": 0,
+                    "y": 30
+                  },
+                  {
+                    "x": 60,
+                    "y": 30
+                  }
+                ],
+                "side": {
+                  "x": 30,
+                  "y": 0
+                },
+                "only": {
+                  "within": [
+                    {
+                      "x": 0,
+                      "y": 0
+                    },
+                    {
+                      "x": 60,
+                      "y": 0
+                    },
+                    {
+                      "x": 30,
+                      "y": 30
+                    }
+                  ]
+                }
+              }
+            ],
+            "text": "Push the sides in along the middle crease and bring the top down. It collapses into a triangle, called a waterbomb base."
+          },
+          {
+            "kind": "valley",
+            "line": [
+              {
+                "x": 15,
+                "y": 45
+              },
+              {
+                "x": 30,
+                "y": 60
+              }
+            ],
+            "move": {
+              "x": 0,
+              "y": 60
+            },
+            "only": {
+              "within": [
+                {
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "x": 60,
+                  "y": 0
+                },
+                {
+                  "x": 30,
+                  "y": 30
+                }
+              ]
+            },
+            "text": "Fold the left corner of the triangle up to its top point. This is a front leg."
+          },
+          {
+            "kind": "valley",
+            "line": [
+              {
+                "x": 45,
+                "y": 45
+              },
+              {
+                "x": 30,
+                "y": 60
+              }
+            ],
+            "move": {
+              "x": 60,
+              "y": 60
+            },
+            "only": {
+              "within": [
+                {
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "x": 60,
+                  "y": 0
+                },
+                {
+                  "x": 30,
+                  "y": 30
+                }
+              ]
+            },
+            "text": "Fold the right corner up to the top too."
+          },
+          {
+            "kind": "valley",
+            "line": [
+              {
+                "x": 15,
+                "y": 60
+              },
+              {
+                "x": 15,
+                "y": 100
+              }
+            ],
+            "move": {
+              "x": 0,
+              "y": 80
+            },
+            "only": {
+              "half": "bottom",
+              "at": 60
+            },
+            "text": "Fold the left edge of the body to the center."
+          },
+          {
+            "kind": "valley",
+            "line": [
+              {
+                "x": 45,
+                "y": 60
+              },
+              {
+                "x": 45,
+                "y": 100
+              }
+            ],
+            "move": {
+              "x": 60,
+              "y": 80
+            },
+            "only": {
+              "half": "bottom",
+              "at": 60
+            },
+            "text": "Fold the right edge of the body to the center."
+          },
+          {
+            "id": "legs",
+            "kind": "valley",
+            "line": [
+              {
+                "x": 0,
+                "y": 80
+              },
+              {
+                "x": 60,
+                "y": 80
+              }
+            ],
+            "move": {
+              "x": 30,
+              "y": 100
+            },
+            "text": "Fold the bottom edge up to the bottom of the triangle."
+          },
+          {
+            "kind": "valley",
+            "line": [
+              {
+                "x": 0,
+                "y": 70
+              },
+              {
+                "x": 60,
+                "y": 70
+              }
+            ],
+            "move": {
+              "x": 30,
+              "y": 60
+            },
+            "only": {
+              "movedIn": "legs"
+            },
+            "text": "Fold that flap back down in half. This pleat is the spring."
+          },
+          {
+            "kind": "flip",
+            "text": "Turn the frog over."
+          }
+        ],
+        "dots": [
+          {
+            "x": 24,
+            "y": 40,
+            "r": 1.8
+          },
+          {
+            "x": 36,
+            "y": 40,
+            "r": 1.8
+          }
+        ]
+      },
+      "finished": false,
+      "snapshots": [
+        {
+          "args": [
+            0,
+            0,
+            0,
+            0,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "89f743f2134d1349c42b89dec1afb608a067a6742839ebff682c0e309e0f5d43"
+        },
+        {
+          "args": [
+            0,
+            0.4,
+            -0.3,
+            0.5,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "05a3253d746095eff79c4bdb497df184f81d30eb598e6e5368d5f46befb6a2ef"
+        },
+        {
+          "args": [
+            0,
+            1,
+            0.6,
+            1.2,
+            true,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "59d6a5b125eb7287f4a944e29ad691632c1528e9cf75f8758d6241a98f385b4c"
+        },
+        {
+          "args": [
+            5,
+            0,
+            0,
+            0,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "5b05dc650c27ed9831e393f0dd6b0061e17200109d0f5f8b2b9899903657028e"
+        },
+        {
+          "args": [
+            5,
+            0.4,
+            -0.3,
+            0.5,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "67cffe2454fedad7587b682b3595de5fd1fefabaa25e60e12edc95bbd46405ce"
+        },
+        {
+          "args": [
+            5,
+            1,
+            0.6,
+            1.2,
+            true,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "b054eae14fe9b30cce8c79fb0208b0bf2544ae4534823ff0ad22383ac6a488fe"
+        },
+        {
+          "args": [
+            10,
+            0,
+            0,
+            0,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "80bff3103d60f77cd3f7ebfd314f6dbeaec986bfd8e65a2f9fde6d7eab326107"
+        },
+        {
+          "args": [
+            10,
+            0.4,
+            -0.3,
+            0.5,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "4e5833bc1873d94537fb86736aa7e4ddd5bf9a876b75965327230e85b4da431d"
+        },
+        {
+          "args": [
+            10,
+            1,
+            0.6,
+            1.2,
+            true,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "eb0c3a9a60722c6501c4b975eb6f30f90dc99ce6fc19d77c2b90564f33999c1e"
+        }
+      ]
+    },
+    {
+      "name": "jumping-frog",
+      "data": {
+        "paper": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 60,
+            "y": 0
+          },
+          {
+            "x": 60,
+            "y": 100
+          },
+          {
+            "x": 0,
+            "y": 100
+          }
+        ],
+        "whiteUp": true,
+        "steps": [
+          {
+            "kind": "crease",
+            "line": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 60,
+                "y": 60
+              }
+            ],
+            "move": {
+              "x": 60,
+              "y": 0
+            },
+            "text": "Use an index card, short edge on top. Fold the top left corner down to the right edge, then unfold."
+          },
+          {
+            "kind": "crease",
+            "line": [
+              {
+                "x": 60,
+                "y": 0
+              },
+              {
+                "x": 0,
+                "y": 60
+              }
+            ],
+            "move": {
+              "x": 0,
+              "y": 0
+            },
+            "text": "Fold the top right corner down to the left edge, then unfold. The creases make an X."
+          },
+          {
+            "kind": "crease",
+            "line": [
+              {
+                "x": 0,
+                "y": 30
+              },
+              {
+                "x": 60,
+                "y": 30
+              }
+            ],
+            "move": {
+              "x": 30,
+              "y": 0
+            },
+            "text": "Fold the top edge down through the middle of the X, then unfold."
+          },
+          {
+            "kind": "collapse",
+            "parts": [
+              {
+                "line": [
+                  {
+                    "x": 30,
+                    "y": 30
+                  },
+                  {
+                    "x": 0,
+                    "y": 60
+                  }
+                ],
+                "side": {
+                  "x": 0,
+                  "y": 40
+                },
+                "only": {
+                  "within": [
+                    {
+                      "x": 0,
+                      "y": 30
+                    },
+                    {
+                      "x": 30,
+                      "y": 30
+                    },
+                    {
+                      "x": 0,
+                      "y": 60
+                    }
+                  ]
+                }
+              },
+              {
+                "line": [
+                  {
+                    "x": 0,
+                    "y": 30
+                  },
+                  {
+                    "x": 30,
+                    "y": 30
+                  }
+                ],
+                "side": {
+                  "x": 0,
+                  "y": 10
+                },
+                "only": {
+                  "within": [
+                    {
+                      "x": 0,
+                      "y": 0
+                    },
+                    {
+                      "x": 30,
+                      "y": 30
+                    },
+                    {
+                      "x": 0,
+                      "y": 30
+                    }
+                  ]
+                },
+                "over": [
+                  [
+                    {
+                      "x": 0,
+                      "y": 30
+                    },
+                    {
+                      "x": 30,
+                      "y": 30
+                    }
+                  ],
+                  [
+                    {
+                      "x": 30,
+                      "y": 30
+                    },
+                    {
+                      "x": 0,
+                      "y": 60
+                    }
+                  ]
+                ]
+              },
+              {
+                "line": [
+                  {
+                    "x": 30,
+                    "y": 30
+                  },
+                  {
+                    "x": 60,
+                    "y": 60
+                  }
+                ],
+                "side": {
+                  "x": 60,
+                  "y": 40
+                },
+                "only": {
+                  "within": [
+                    {
+                      "x": 60,
+                      "y": 30
+                    },
+                    {
+                      "x": 30,
+                      "y": 30
+                    },
+                    {
+                      "x": 60,
+                      "y": 60
+                    }
+                  ]
+                }
+              },
+              {
+                "line": [
+                  {
+                    "x": 60,
+                    "y": 30
+                  },
+                  {
+                    "x": 30,
+                    "y": 30
+                  }
+                ],
+                "side": {
+                  "x": 60,
+                  "y": 10
+                },
+                "only": {
+                  "within": [
+                    {
+                      "x": 60,
+                      "y": 0
+                    },
+                    {
+                      "x": 30,
+                      "y": 30
+                    },
+                    {
+                      "x": 60,
+                      "y": 30
+                    }
+                  ]
+                },
+                "over": [
+                  [
+                    {
+                      "x": 60,
+                      "y": 30
+                    },
+                    {
+                      "x": 30,
+                      "y": 30
+                    }
+                  ],
+                  [
+                    {
+                      "x": 30,
+                      "y": 30
+                    },
+                    {
+                      "x": 60,
+                      "y": 60
+                    }
+                  ]
+                ]
+              },
+              {
+                "line": [
+                  {
+                    "x": 0,
+                    "y": 30
+                  },
+                  {
+                    "x": 60,
+                    "y": 30
+                  }
+                ],
+                "side": {
+                  "x": 30,
+                  "y": 0
+                },
+                "only": {
+                  "within": [
+                    {
+                      "x": 0,
+                      "y": 0
+                    },
+                    {
+                      "x": 60,
+                      "y": 0
+                    },
+                    {
+                      "x": 30,
+                      "y": 30
+                    }
+                  ]
+                }
+              }
+            ],
+            "text": "Push the sides in along the middle crease and bring the top down. It collapses into a triangle, called a waterbomb base."
+          },
+          {
+            "kind": "valley",
+            "line": [
+              {
+                "x": 15,
+                "y": 45
+              },
+              {
+                "x": 30,
+                "y": 60
+              }
+            ],
+            "move": {
+              "x": 0,
+              "y": 60
+            },
+            "only": {
+              "within": [
+                {
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "x": 60,
+                  "y": 0
+                },
+                {
+                  "x": 30,
+                  "y": 30
+                }
+              ]
+            },
+            "text": "Fold the left corner of the triangle up to its top point. This is a front leg."
+          },
+          {
+            "kind": "valley",
+            "line": [
+              {
+                "x": 45,
+                "y": 45
+              },
+              {
+                "x": 30,
+                "y": 60
+              }
+            ],
+            "move": {
+              "x": 60,
+              "y": 60
+            },
+            "only": {
+              "within": [
+                {
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "x": 60,
+                  "y": 0
+                },
+                {
+                  "x": 30,
+                  "y": 30
+                }
+              ]
+            },
+            "text": "Fold the right corner up to the top too."
+          },
+          {
+            "kind": "valley",
+            "line": [
+              {
+                "x": 15,
+                "y": 60
+              },
+              {
+                "x": 15,
+                "y": 100
+              }
+            ],
+            "move": {
+              "x": 0,
+              "y": 80
+            },
+            "only": {
+              "half": "bottom",
+              "at": 60
+            },
+            "text": "Fold the left edge of the body to the center."
+          },
+          {
+            "kind": "valley",
+            "line": [
+              {
+                "x": 45,
+                "y": 60
+              },
+              {
+                "x": 45,
+                "y": 100
+              }
+            ],
+            "move": {
+              "x": 60,
+              "y": 80
+            },
+            "only": {
+              "half": "bottom",
+              "at": 60
+            },
+            "text": "Fold the right edge of the body to the center."
+          },
+          {
+            "id": "legs",
+            "kind": "valley",
+            "line": [
+              {
+                "x": 0,
+                "y": 80
+              },
+              {
+                "x": 60,
+                "y": 80
+              }
+            ],
+            "move": {
+              "x": 30,
+              "y": 100
+            },
+            "text": "Fold the bottom edge up to the bottom of the triangle."
+          },
+          {
+            "kind": "valley",
+            "line": [
+              {
+                "x": 0,
+                "y": 70
+              },
+              {
+                "x": 60,
+                "y": 70
+              }
+            ],
+            "move": {
+              "x": 30,
+              "y": 60
+            },
+            "only": {
+              "movedIn": "legs"
+            },
+            "text": "Fold that flap back down in half. This pleat is the spring."
+          },
+          {
+            "kind": "flip",
+            "text": "Turn the frog over."
+          }
+        ],
+        "dots": [
+          {
+            "x": 24,
+            "y": 40,
+            "r": 1.8
+          },
+          {
+            "x": 36,
+            "y": 40,
+            "r": 1.8
+          }
+        ]
+      },
+      "finished": true,
+      "snapshots": [
+        {
+          "args": [
+            0,
+            0,
+            0,
+            0,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "6660433aaff2055bb0f421c9d4503bc01fd96bac5cd34b1f07aae79c2531913c"
+        },
+        {
+          "args": [
+            0,
+            0.4,
+            -0.3,
+            0.5,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "559a910bd7b300b1bdcee7c63656cf70c0db5b466a3f66b580b3bb2a0fea007f"
+        },
+        {
+          "args": [
+            0,
+            1,
+            0.6,
+            1.2,
+            true,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "4c3444146f821555162836a93070a1a89c0f70a21991d64868218f9730f565fb"
+        },
+        {
+          "args": [
+            5,
+            0,
+            0,
+            0,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "b77a16c8f5fd62623d9ca5ad7ab1e0067f23a906bf79feaa84ad5fe9957b4465"
+        },
+        {
+          "args": [
+            5,
+            0.4,
+            -0.3,
+            0.5,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "2e9039e4d70f583567d4b396737983cf1c41f256b50b21dd29d84a27d42b6ca3"
+        },
+        {
+          "args": [
+            5,
+            1,
+            0.6,
+            1.2,
+            true,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "24744a18f370d1cdb3e9e90b428af8700ff2d5dcebab587daf132016dfb0b9da"
+        },
+        {
+          "args": [
+            10,
+            0,
+            0,
+            0,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "80bff3103d60f77cd3f7ebfd314f6dbeaec986bfd8e65a2f9fde6d7eab326107"
+        },
+        {
+          "args": [
+            10,
+            0.4,
+            -0.3,
+            0.5,
+            false,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "4e5833bc1873d94537fb86736aa7e4ddd5bf9a876b75965327230e85b4da431d"
+        },
+        {
+          "args": [
+            10,
+            1,
+            0.6,
+            1.2,
+            true,
+            16051936,
+            14933195,
+            2972624,
+            16777215,
+            1118481
+          ],
+          "hash": "eb0c3a9a60722c6501c4b975eb6f30f90dc99ce6fc19d77c2b90564f33999c1e"
+        }
+      ]
+    }
+  ]
+}

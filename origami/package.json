@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "wasm": "wasm-pack build engine --target web --release --out-dir pkg --no-pack",
+    "wasm": "wasm-pack build ../rendering/origami --target web --release --out-dir pkg --no-pack",
     "dev": "npm run wasm && vite",
     "build": "npm run wasm && tsc --noEmit && vite build",
     "preview": "vite preview",
