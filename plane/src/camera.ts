@@ -1,79 +1,105 @@
 // Scroll position to engine frame. Each stop holds still for most of its screen, then the last stretch moves to the
-// next: within a scene the camera does a balloon zoom (eases out, travels, eases back in); between scenes it pushes
-// in and fades through the dark.
+// next: around the same diorama the camera glides and orbits; to another diorama it rises above the row of plinths,
+// flies over and comes down to the new one, like walking a museum's tables.
 
-import type { Frame } from './engine'
-import { Scene, type View } from './tour'
+import type { Frame, V3 } from './engine'
+import type { View } from './tour'
 
 /** The part of the frame the card leaves free, in framebuffer pixels. */
 export type Region = { x: number; y: number; w: number; h: number }
 
 export function freeRegion(w: number, h: number): Region {
   // a phone held upright: the card sits at the bottom, the picture above it
-  if (w < h) return { x: 0, y: h * 0.06, w, h: h * 0.52 }
+  if (w < h) return { x: 0, y: h * 0.04, w, h: h * 0.56 }
   // wider screens: the card on the left, the picture to its right
-  return { x: w * 0.36, y: h * 0.08, w: w * 0.62, h: h * 0.86 }
+  return { x: w * 0.36, y: h * 0.06, w: w * 0.62, h: h * 0.9 }
 }
 
-type Cam = { cx: number; cy: number; zoom: number }
+// the engine's lens: a long one, 0.62 radians top to bottom
+const FOCAL = 0.5 / Math.tan(0.31)
 
-function cam(v: View, fw: number, fh: number, r: Region): Cam {
-  const rcx = r.x + r.w / 2, rcy = r.y + r.h / 2
-  if (v.scene === Scene.Model) return { cx: rcx - fw / 2, cy: rcy - fh / 2, zoom: Math.min(r.w, r.h) / Math.min(fw, fh) }
-  const s = v.shot
-  const zoom = Math.min(r.w / (s.w * 1.06), r.h / (s.h * 1.06))
-  return { cx: s.x - (rcx - fw / 2) / zoom, cy: s.y - (rcy - fh / 2) / zoom, zoom }
-}
+type Pose = { t: V3; yaw: number; pitch: number; dist: number }
 
-const ease = (u: number) => u * u * (3 - 2 * u)
 const lerp = (a: number, b: number, u: number) => a + (b - a) * u
+const ease = (u: number) => u * u * (3 - 2 * u)
 
-function frameOf(v: View, c: Cam): Frame {
+/** A stop's pose in the world, before fitting it to the free region. */
+function pose(v: View, origins: V3[]): Pose {
+  const o = origins[v.set]
+  return { t: [o[0] + v.look.x, o[1] + v.look.y, o[2] + v.look.z], yaw: v.look.yaw, pitch: v.look.pitch, dist: v.look.dist }
+}
+
+/** Moves the camera so the target sits in the middle of the free region, and back enough that the view fits it. */
+function fit(p: Pose, fw: number, fh: number, r: Region): Pose {
+  const aspect = r.w / r.h
+  const dist = Math.min(p.dist * (fh / r.h) * Math.max(1, 1.5 / aspect), p.dist * 3.2)
+  // the screen offset of the region's center, turned into a sideways and vertical shift of the target
+  const f = fh * FOCAL
+  const dx = (r.x + r.w / 2 - fw / 2) * dist / f
+  const dy = (r.y + r.h / 2 - fh / 2) * dist / f
+  const [sy, cy] = [Math.sin(p.yaw), Math.cos(p.yaw)]
+  const [sp, cp] = [Math.sin(p.pitch), Math.cos(p.pitch)]
+  const right: V3 = [cy, 0, -sy]
+  const up: V3 = [-sp * sy, cp, -sp * cy]
+  const t: V3 = [0, 1, 2].map((k) => p.t[k] - right[k] * dx + up[k] * dy) as V3
+  return { ...p, t, dist }
+}
+
+function frameOf(v: View, p: Pose, set: number): Frame {
   return {
-    scene: v.scene,
-    cx: c.cx,
-    cy: c.cy,
-    zoom: c.zoom,
+    scene: set,
+    tx: p.t[0],
+    ty: p.t[1],
+    tz: p.t[2],
+    yaw: p.yaw,
+    pitch: p.pitch,
+    dist: p.dist,
     explode: v.explode ?? 0,
     focus: v.focus ?? -1,
     flows: v.flows ?? 0,
-    model: v.model ?? 0,
-    yaw: v.yaw ?? 0.5,
-    pitch: v.pitch ?? 0.3,
     anim: v.anim ?? 0,
     fade: 0,
   }
 }
 
-/** The frame at scroll position `p` (in screens, 0 at the first view), for a framebuffer `fw` x `fh`. */
-export function frameAt(views: View[], p: number, fw: number, fh: number, still: boolean): Frame {
+/** Blends two views at s (0 to 1). Orbit offsets (drag) are added on top by the caller. */
+export function between(a: View, b: View, s: number, origins: V3[], fw: number, fh: number, still: boolean): Frame {
   const r = freeRegion(fw, fh)
+  const pa = fit(pose(a, origins), fw, fh, r)
+  const pb = fit(pose(b, origins), fw, fh, r)
+  if (s <= 0 || a === b) return frameOf(a, pa, a.set)
+  if (s >= 1) return frameOf(b, pb, b.set)
+  const travel = Math.hypot(pb.t[0] - pa.t[0], pb.t[1] - pa.t[1], pb.t[2] - pa.t[2])
+  const arc = Math.sin(Math.PI * s)
+  // the shorter way round
+  let dyaw = pb.yaw - pa.yaw
+  dyaw -= Math.round(dyaw / (2 * Math.PI)) * 2 * Math.PI
+  const base = Math.exp(lerp(Math.log(pa.dist), Math.log(pb.dist), s))
+  // over a long hop, rise high enough to see both tables; on a short one, ease out a little and back in
+  const lift = still ? 0 : Math.max(base * 0.25, travel * 0.8 - base) * arc
+  const p: Pose = {
+    t: [0, 1, 2].map((k) => lerp(pa.t[k], pb.t[k], s)) as V3,
+    yaw: pa.yaw + dyaw * s,
+    pitch: lerp(pa.pitch, pb.pitch, s) + (still ? 0 : arc * Math.min(0.35, travel / 600)),
+    dist: base + lift,
+  }
+  const near = s < 0.5 ? a : b
+  const f = frameOf(near, p, near.set)
+  if (a.set === b.set) {
+    f.explode = lerp(a.explode ?? 0, b.explode ?? 0, s)
+    f.anim = lerp(a.anim ?? 0, b.anim ?? 0, s)
+  } else if (near.explode !== undefined) {
+    // a model assembles as you leave it and comes apart as you arrive
+    f.explode = (near.explode ?? 0) * Math.abs(2 * s - 1)
+  }
+  return f
+}
+
+/** The frame at scroll position `p` (in screens, 0 at the first view). */
+export function frameAt(views: View[], p: number, origins: V3[], fw: number, fh: number, still: boolean): Frame {
   const i = Math.max(0, Math.min(views.length - 1, Math.floor(p)))
   const a = views[i], b = views[Math.min(views.length - 1, i + 1)]
-  // hold, then move over the last 45% of the screen
-  const s = ease(Math.max(0, Math.min(1, (p - i - 0.55) / 0.45)))
-  const ca = cam(a, fw, fh, r), cb = cam(b, fw, fh, r)
-  if (s === 0 || a === b) return frameOf(a, ca)
-  const sameScene = a.scene === b.scene && (a.scene !== Scene.Model || a.model === b.model)
-  if (sameScene) {
-    const dip = still ? 1 : 1 - 0.38 * Math.sin(Math.PI * s)
-    const f = frameOf(s < 0.5 ? a : b, {
-      cx: lerp(ca.cx, cb.cx, s),
-      cy: lerp(ca.cy, cb.cy, s),
-      zoom: Math.exp(lerp(Math.log(ca.zoom), Math.log(cb.zoom), s)) * dip,
-    })
-    f.explode = lerp(a.explode ?? 0, b.explode ?? 0, s)
-    f.yaw = lerp(a.yaw ?? 0.5, b.yaw ?? 0.5, s)
-    f.pitch = lerp(a.pitch ?? 0.3, b.pitch ?? 0.3, s)
-    f.anim = lerp(a.anim ?? 0, b.anim ?? 0, s)
-    return f
-  }
-  // a cut through the dark: push into the old scene, then settle into the new one
-  const out = s < 0.5
-  const c = out ? ca : cb
-  const push = still ? 1 : out ? 1 + 0.5 * s : 1 + 0.5 * (1 - s)
-  const f = frameOf(out ? a : b, a.scene === Scene.Model && out ? c : { ...c, zoom: c.zoom * push })
-  if (f.scene === Scene.Model) f.explode = (out ? a.explode ?? 0 : b.explode ?? 0) * (out ? 1 - s : s)
-  f.fade = 1 - Math.abs(2 * s - 1)
-  return f
+  // hold, then move over the last half of the screen
+  const s = ease(Math.max(0, Math.min(1, (p - i - 0.5) / 0.5)))
+  return between(a, b, s, origins, fw, fh, still)
 }
