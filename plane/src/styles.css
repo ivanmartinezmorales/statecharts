@@ -40,7 +40,6 @@ h1 {
   filter: drop-shadow(4px 4px 0 #2a0a5c) drop-shadow(0 0 22px rgba(255, 79, 168, 0.45));
 }
 .lede { font-size: clamp(17px, 1.5vw, 21px); color: var(--soft); max-width: 34em; text-shadow: 0 2px 0 #1a0838; }
-.cover__meta { font: 400 12px var(--tiny); color: var(--gold); margin-top: 20px; }
 
 /* a stop's card: thick border in three colors, a hard shadow, stripes at the top */
 .card {
