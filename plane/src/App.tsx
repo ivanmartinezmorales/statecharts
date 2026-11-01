@@ -18,7 +18,6 @@ type Move = { from: View; to: View; t0: number }
 export function App() {
   const stage = useRef<HTMLDivElement>(null)
   const [at, setAt] = useState(0)
-  const [mode, setMode] = useState('')
   const [deep, setDeep] = useState<Deep | null>(null)
   // the render loop reads these without re-rendering
   const deepRef = useRef<Deep | null>(null)
@@ -38,8 +37,6 @@ export function App() {
     ;(async () => {
       const renderer = await createRenderer(stage.current!, size(), controller.signal)
       if (controller.signal.aborted) { renderer.destroy(); return }
-      const mode = () => renderer.kind === 'webgpu' ? (renderer.hdr ? 'HDR' : 'WebGPU') : 'Canvas'
-      setMode(mode())
       const origins: V3[] = renderer.origins
       const tick = (now: number) => {
         if (document.hidden || !innerHeight) return
@@ -66,7 +63,6 @@ export function App() {
           if (controller.signal.aborted) return
           slow = ms > 26 ? slow + 1 : Math.max(0, slow - 1)
           if (slow > 20 && scale < 3) { scale += 0.75; slow = 0 }
-          setMode(mode())
         }).catch(error => {
           if (controller.signal.aborted) return
           console.error('Rendering failed', error)
@@ -175,7 +171,6 @@ export function App() {
             <p className="kicker">How things work</p>
             <h1>The 787 Dreamliner</h1>
             <p className="lede">A tour of a long-range jet as a row of pixel dioramas, from the flight deck to the fuel tanks: how it flies, how its engines burn, how every system moves power around the airplane. Scroll down to board; open any stop to walk around it.</p>
-            <p className="cover__meta">{STOPS.length} stops in {CHAPTERS.length} chapters{mode && ` · rendered in WASM, ${mode}`}</p>
           </header>
         </section>
         {STOPS.map((s, i) => (
