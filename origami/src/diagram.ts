@@ -15,6 +15,24 @@ export interface Only {
   readonly at?: number;
   readonly movedIn?: string;
   readonly notMovedIn?: readonly string[];
+  /** A polygon on the unfolded sheet the face must lie in. */
+  readonly within?: readonly Vec2[];
+  /** The front or back half of the layers that would move. */
+  readonly layers?: 'front' | 'back';
+}
+
+/** One group of faces in a compound fold. */
+export interface Part {
+  /** Matching faces are cut along this line; the pieces on `side` belong to the part. */
+  readonly line: Line;
+  readonly side: Vec2;
+  readonly only?: Only;
+  /** The lines the part is reflected across, in order. Defaults to `line`. */
+  readonly over?: readonly Line[];
+  /** Which way it lifts off the table on the way: toward you (default) or away. */
+  readonly swing?: 'up' | 'down';
+  /** Where it lands in the stack: on top (default), underneath, between the layers it was cut from, or in place. */
+  readonly stack?: 'top' | 'bottom' | 'inside' | 'place';
 }
 
 export type Step =
@@ -29,7 +47,19 @@ export type Step =
       readonly text: string;
     }
   | { readonly kind: 'flip'; readonly id?: string; readonly text: string }
-  | { readonly kind: 'rotate'; readonly id?: string; readonly deg: number; readonly text: string };
+  | { readonly kind: 'rotate'; readonly id?: string; readonly deg: number; readonly text: string }
+  /** Several groups of faces moving at once, each across its own lines. */
+  | { readonly kind: 'squash' | 'petal' | 'collapse'; readonly id?: string; readonly parts: readonly Part[]; readonly text: string }
+  /** The front layers of a flap fold one way and the back layers the other, along one line. */
+  | {
+      readonly kind: 'reverse';
+      readonly id?: string;
+      readonly direction: 'inside' | 'outside';
+      readonly line: Line;
+      readonly move: Vec2;
+      readonly only?: Only;
+      readonly text: string;
+    };
 
 /** Eyes and noses drawn on a finished model, in paper coordinates. */
 export interface Dot {
