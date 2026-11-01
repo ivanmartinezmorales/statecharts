@@ -10,9 +10,9 @@ function read(): string[] {
 
 export const done = new Set<string>(read());
 
-/** Remembers a finished model and tells the page so the learning path can update. */
-export function markDone(slug: string) {
-  if (done.has(slug)) return;
+/** Remembers a finished model and tells the page so the learning path can update. True the first time. */
+export function markDone(slug: string): boolean {
+  if (done.has(slug)) return false;
   done.add(slug);
   try {
     localStorage.setItem(KEY, JSON.stringify([...done]));
@@ -20,4 +20,5 @@ export function markDone(slug: string) {
     /* private mode: progress just isn't remembered */
   }
   window.dispatchEvent(new Event('progress'));
+  return true;
 }

@@ -1,6 +1,6 @@
 import './style.css';
 import { all, levels } from './models';
-import { picker, type Filter } from './picker';
+import { picker, topics, type Filter } from './picker';
 import { workspace } from './workspace';
 import { done } from './progress';
 import { ready } from './engine';
@@ -42,7 +42,9 @@ function route() {
   if (model) {
     teardown = workspace(app, model);
   } else {
-    const filter = (levels.some((l) => l.level === arg) && page === 'level' ? arg : 'all') as Filter;
+    const level = page === 'level' ? levels.find((l) => l.level === arg)?.level : undefined;
+    const topic = page === 'topic' ? topics.find((t) => t.topic === arg)?.topic : undefined;
+    const filter: Filter = level ? { by: 'level', level } : topic ? { by: 'topic', topic } : { by: 'all' };
     teardown = picker(app, filter);
   }
   document.title = model ? `${model.name} · Origami` : 'Origami: learn to fold, step by step';

@@ -1,7 +1,8 @@
 import { all, type Model } from './models';
 import type { Step } from './diagram';
 import { PaperCanvas, type Camera } from './engine';
-import { markDone } from './progress';
+import { done, markDone } from './progress';
+import { surprise } from './picker';
 import { kami } from './kami';
 import { esc, icons } from './icons';
 
@@ -36,6 +37,8 @@ export function workspace(app: HTMLElement, model: Model): () => void {
   let i = 0;
   let t = 0;
   let playing = false;
+  let auto = false;
+  let held = 0;
   let spinning = false;
   let resetting = false;
   let raf = 0;
@@ -74,6 +77,7 @@ export function workspace(app: HTMLElement, model: Model): () => void {
             <button class="next" aria-label="Next step">${icons.right}</button>
           </div>
           <input class="scrub" type="range" min="0" max="1000" value="0" aria-label="Fold progress" />
+          <button class="play-all" type="button" aria-pressed="false"></button>
           <div class="finish" hidden></div>
           <ol class="step-list">
             ${steps.map((s, k) => `<li><button data-k="${k}"><span class="num">${k + 1}</span><span>${esc(short(s.text))}</span></button></li>`).join('')}
@@ -101,6 +105,7 @@ export function workspace(app: HTMLElement, model: Model): () => void {
   const reset = $<HTMLButtonElement>('.reset');
   const scrub = $<HTMLInputElement>('.scrub');
   const finish = $<HTMLElement>('.finish');
+  const playAll = $<HTMLButtonElement>('.play-all');
   const list = [...app.querySelectorAll<HTMLButtonElement>('.step-list button')];
   const paper = new PaperCanvas(canvas, model);
 
@@ -118,6 +123,8 @@ export function workspace(app: HTMLElement, model: Model): () => void {
     symbol.textContent = `Uses the ${lesson.name} symbol`;
     scrub.value = String(Math.round(t * 1000));
     play.textContent = t >= 1 ? (i === last ? 'Fold again' : 'Next step') : playing ? 'Pause' : 'Fold';
+    playAll.textContent = auto ? 'Stop playing' : 'Play every step';
+    playAll.setAttribute('aria-pressed', String(auto));
     spin.setAttribute('aria-pressed', String(spinning));
     reset.disabled = !resetting && cam.yaw === 0 && cam.pitch === 0;
     list.forEach((b, k) => {
@@ -127,11 +134,18 @@ export function workspace(app: HTMLElement, model: Model): () => void {
     });
     finish.hidden = !complete();
     if (complete()) {
-      markDone(model.slug);
+      if (markDone(model.slug)) celebrate(figure);
       const title = model.level === 'basics' ? 'Lesson complete' : `You folded a ${esc(model.name.toLowerCase())}`;
-      finish.innerHTML = `<p class="finish-title">${title}</p><p>${esc(model.finish)}</p>${
-        next ? `<a class="button primary" href="#/fold/${next.slug}">Next: ${esc(next.name)}</a>` : '<a class="button primary" href="#/">Back to all models</a>'
-      }`;
+      const total = all.filter((m) => m.topic !== 'technique');
+      const folded = total.filter((m) => done.has(m.slug)).length;
+      finish.innerHTML = `<p class="finish-title">${title}</p><p>${esc(model.finish)}</p>
+        <p class="tally">${folded} of ${total.length} models folded</p>
+        <div class="finish-actions">${
+          next ? `<a class="button primary" href="#/fold/${next.slug}">Next: ${esc(next.name)}</a>` : '<a class="button primary" href="#/">Back to all models</a>'
+        }<button class="button secondary surprise" type="button">Surprise me</button></div>`;
+      finish.querySelector('.surprise')!.addEventListener('click', () => {
+        location.hash = `#/fold/${surprise().slug}`;
+      });
     }
   }
 
@@ -141,6 +155,16 @@ export function workspace(app: HTMLElement, model: Model): () => void {
     if (playing) {
       t = Math.min(1, t + dt / (steps[i]!.kind === 'crease' ? 1800 : 1300));
       playing = t < 1;
+    } else if (auto && t >= 1) {
+      // Rest on each finished step for a moment before folding the next one.
+      held += dt;
+      if (i === last) auto = false;
+      else if (held > 650) {
+        held = 0;
+        i += 1;
+        t = 0;
+        playing = true;
+      }
     }
     if (spinning) cam.yaw += dt * 0.0011;
     if (resetting) {
@@ -152,7 +176,7 @@ export function workspace(app: HTMLElement, model: Model): () => void {
       }
     }
     draw();
-    raf = playing || spinning || resetting ? requestAnimationFrame(frame) : 0;
+    raf = playing || spinning || resetting || auto ? requestAnimationFrame(frame) : 0;
   }
 
   function kick() {
@@ -173,7 +197,20 @@ export function workspace(app: HTMLElement, model: Model): () => void {
     draw();
   }
 
+  function togglePlayAll() {
+    auto = !auto;
+    held = 0;
+    if (!auto) {
+      playing = false;
+      return draw();
+    }
+    if (complete()) go(0, 0);
+    if (t < 1) playing = true;
+    kick();
+  }
+
   function advance() {
+    auto = false;
     if (playing) {
       playing = false;
       return draw();
@@ -198,6 +235,7 @@ export function workspace(app: HTMLElement, model: Model): () => void {
   }
 
   play.addEventListener('click', advance);
+  playAll.addEventListener('click', togglePlayAll);
   spin.addEventListener('click', toggleSpin);
   reset.addEventListener('click', topView);
   $<HTMLButtonElement>('.next').addEventListener('click', () => (t < 1 ? animate() : go(i + 1, 0)));
@@ -262,4 +300,39 @@ export function workspace(app: HTMLElement, model: Model): () => void {
     cancelAnimationFrame(raf);
     window.removeEventListener('keydown', onKey);
   };
+}
+
+/** A burst of square paper confetti over the stage, the first time a model is finished. */
+function celebrate(stage: HTMLElement) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'confetti';
+  canvas.width = canvas.height = 128;
+  stage.append(canvas);
+  const ctx = canvas.getContext('2d')!;
+  const bits = Array.from({ length: 70 }, () => ({
+    x: 64 + (Math.random() - 0.5) * 20,
+    y: 70,
+    vx: (Math.random() - 0.5) * 110,
+    vy: -60 - Math.random() * 90,
+    size: 2 + Math.round(Math.random() * 2),
+    color: kami[Math.floor(Math.random() * kami.length)]!.hex,
+  }));
+  const start = performance.now();
+  let then = start;
+  const tick = (now: number) => {
+    const dt = (now - then) / 1000;
+    then = now;
+    ctx.clearRect(0, 0, 128, 128);
+    for (const b of bits) {
+      b.vy += 160 * dt;
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      ctx.fillStyle = b.color;
+      ctx.fillRect(Math.round(b.x), Math.round(b.y), b.size, b.size);
+    }
+    if (now - start < 1800) requestAnimationFrame(tick);
+    else canvas.remove();
+  };
+  requestAnimationFrame(tick);
 }
