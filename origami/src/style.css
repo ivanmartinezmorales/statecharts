@@ -1051,6 +1051,20 @@ a.tile:hover .tile-name {
   pointer-events: none;
 }
 
+/* Page swaps: the bar holds still while the page underneath crossfades and settles. */
+.bar {
+  view-transition-name: bar;
+}
+
+::view-transition-group(root) {
+  animation-duration: 260ms;
+  animation-timing-function: var(--ease);
+}
+
+::view-transition-new(root) {
+  animation: rise 260ms var(--ease) both;
+}
+
 @keyframes rise {
   from {
     opacity: 0;
