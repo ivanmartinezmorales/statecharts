@@ -7,8 +7,10 @@ mod cabin;
 mod deck;
 mod exterior;
 mod gfx;
+mod models;
 mod pal;
 mod planform;
+mod three;
 mod turbofan;
 
 use gfx::Canvas;
@@ -115,7 +117,7 @@ pub extern "C" fn frame(t: f32) {
             2 => planform::draw(c, &p),
             3 => turbofan::draw(c, &p),
             4 => cabin::draw(c, &p),
-            _ => c.clear(pal::NIGHT),
+            _ => models::draw(c, &p),
         }
         c.fade(pal::NIGHT, p.fade);
         c.finish();
