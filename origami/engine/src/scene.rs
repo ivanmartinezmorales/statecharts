@@ -241,25 +241,70 @@ pub fn draw(canvas: &mut Canvas, f: &Frame2d, pal: &Palette) {
             (order, p.still.normal)
         }
     };
-    for (i, pts) in &order {
-        let face = &f.stage.faces[*i];
-        if area(&face.pts).abs() <= SLIVER {
-            continue;
+    // Paper has thickness: each layer up the stack sits a little higher, so tilted views show the
+    // stack and its folded edges. The whole stack stays thin however many layers there are.
+    let visible: Vec<&(usize, Vec<V3>)> = order.iter().filter(|(i, _)| area(&f.stage.faces[*i].pts).abs() > SLIVER).collect();
+    let step = (f.view.size * 0.06 / visible.len().max(1) as f64).min(f.view.size * 0.009);
+    let lift = |pts: &[V3], k: usize| -> Vec<V3> {
+        let h = step * k as f64;
+        pts.iter().map(|p| V3 { x: p.x + still_normal.x * h, y: p.y + still_normal.y * h, z: p.z + still_normal.z * h }).collect()
+    };
+
+    // A soft-edged shadow on the mat, cast down and to the right.
+    let mut shade = vec![false; PIXELS * PIXELS];
+    let drop = V2::new(1.2 * DENSITY * 2.0, 1.6 * DENSITY * 2.0);
+    for (_, pts) in &visible {
+        let scr: Vec<V2> = pts.iter().map(|&q| {
+            let p = project(V3 { z: 0.0, ..q });
+            V2::new(p.x + drop.x, p.y + drop.y)
+        }).collect();
+        canvas.fill(&scr, |_, x, y| {
+            if x >= 0 && y >= 0 && (x as usize) < PIXELS && (y as usize) < PIXELS {
+                shade[y as usize * PIXELS + x as usize] = true;
+            }
+        });
+    }
+    for (k, on) in shade.into_iter().enumerate() {
+        if on {
+            canvas.blend((k % PIXELS) as i64, (k / PIXELS) as i64, [0.0; 3], 0.16);
         }
+    }
+
+    let light = { let (x, y, z) = (-0.35_f64, -0.55_f64, 0.76_f64); let l = (x * x + y * y + z * z).sqrt(); V3 { x: x / l, y: y / l, z: z / l } };
+    let n = visible.len().max(1) as f64;
+    for (k, (i, pts)) in visible.iter().enumerate() {
+        let face = &f.stage.faces[*i];
+        let pts = lift(pts, k);
         let scr: Vec<V2> = pts.iter().map(|&q| project(q)).collect();
         let (a, a0) = (area(&scr), area(&face.orig));
         let color_up = (a.signum() == a0.signum()) != f.white_up;
-        let light = (a / (a0 * px * px)).abs().min(1.0);
-        let base = scale(if color_up { pal.paper } else { pal.paper_back }, (58.0 + 42.0 * light).round() / 100.0);
+        // Lambert shading from the face's normal in view space, turned toward the camera.
+        let cam_pts: Vec<V3> = pts.iter().take(3).map(|&q| orbit(V3 { x: q.x - pivot.x, y: q.y - pivot.y, z: q.z }, f.cam)).collect();
+        let (u, w) = (
+            V3 { x: cam_pts[1].x - cam_pts[0].x, y: cam_pts[1].y - cam_pts[0].y, z: cam_pts[1].z - cam_pts[0].z },
+            V3 { x: cam_pts[2].x - cam_pts[0].x, y: cam_pts[2].y - cam_pts[0].y, z: cam_pts[2].z - cam_pts[0].z },
+        );
+        let mut nrm = V3 { x: u.y * w.z - u.z * w.y, y: u.z * w.x - u.x * w.z, z: u.x * w.y - u.y * w.x };
+        let len = (nrm.x * nrm.x + nrm.y * nrm.y + nrm.z * nrm.z).sqrt().max(1e-9);
+        nrm = V3 { x: nrm.x / len, y: nrm.y / len, z: nrm.z / len };
+        if nrm.z < 0.0 {
+            nrm = V3 { x: -nrm.x, y: -nrm.y, z: -nrm.z };
+        }
+        let lambert = (nrm.x * light.x + nrm.y * light.y + nrm.z * light.z).max(0.0);
+        // Deeper layers sit in a little shadow of the ones above them.
+        let depth = 0.9 + 0.1 * (k as f64 + 1.0) / n;
+        let brightness = (0.5 + 0.55 * lambert) * depth;
+        let base = scale(if color_up { pal.paper } else { pal.paper_back }, brightness.min(1.05));
         canvas.fill(&scr, |c, x, y| c.set(x, y, scale(base, 0.95 + 0.06 * hash(x as usize, y as usize))));
-        for (k, &q) in scr.iter().enumerate() {
-            canvas.line(q, scr[(k + 1) % scr.len()], &[], [0.0; 3], 0.4);
+        for (e, &q) in scr.iter().enumerate() {
+            canvas.line(q, scr[(e + 1) % scr.len()], &[], [0.0; 3], 0.35);
         }
     }
 
     if !f.dots.is_empty() && orbit(still_normal, f.cam).z > 0.0 {
         for d in f.dots {
-            canvas.disc(project(flat(V2::new(d.x, d.y))), (d.r * px).max(1.2 * DENSITY), [22.0; 3]);
+            let top = lift(&[flat(V2::new(d.x, d.y))], visible.len())[0];
+            canvas.disc(project(top), (d.r * px).max(1.2 * DENSITY), [22.0; 3]);
         }
     }
 

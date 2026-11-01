@@ -33,7 +33,8 @@ export function workspace(app: HTMLElement, model: Model): () => void {
   const steps = model.steps;
   const next = all[all.indexOf(model) + 1];
   const last = steps.length - 1;
-  const cam: Camera = { yaw: 0, pitch: 0 };
+  // Start at a three-quarter angle so the paper reads in 3D; Top view flattens it like a printed diagram.
+  const cam: Camera = { yaw: -0.32, pitch: 0.48 };
   let i = 0;
   let t = 0;
   let playing = false;
