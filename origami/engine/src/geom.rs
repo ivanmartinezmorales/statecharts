@@ -5,6 +5,8 @@
 use serde::Deserialize;
 
 const EPS: f64 = 1e-6;
+/// Faces smaller than this (in square paper units) are slivers left by cuts, not paper.
+pub const SLIVER: f64 = 0.01;
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq)]
 pub struct V2 {
@@ -628,7 +630,8 @@ pub fn build_stages(paper: &[V2], steps: &[Step]) -> Vec<Stage> {
         .map(|(i, step)| {
             let id = step.id().map_or_else(|| format!("#{i}"), str::to_string);
             let stage = resolve(&faces, step, &id);
-            faces = stage.after.clone();
+            // Cuts that graze a vertex can leave zero-width slivers; drop them before the next step.
+            faces = stage.after.iter().filter(|f| area(&f.pts).abs() > SLIVER).cloned().collect();
             stage
         })
         .collect()
