@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { useReducedMotion } from './kit/reduced-motion'
 import type { Model } from './components'
+import { noirHex } from './noir.js'
 
 // A component, built in 3D and pulled apart into its parts. It arrives whole, then explodes: a pipe or cable is
 // stripped back layer by layer like a wire, a stack lifts apart slab by slab. Drag to turn it. It is drawn at a third
@@ -13,7 +14,8 @@ const LEN = 4.4
 
 type Built = { group: THREE.Group; parts: { meshes: THREE.Mesh[]; place: (t: number) => void }[] }
 
-const mat = (color: string) => new THREE.MeshLambertMaterial({ color, flatShading: true })
+// parts keep their real colors in the data; on screen they are graded like everything else
+const mat = (color: string) => new THREE.MeshLambertMaterial({ color: noirHex(color), flatShading: true })
 
 // A hollow tube along X from r0 to r1, length 1 (scaled to its length later), centered on the origin
 function tube(r0: number, r1: number, color: string) {
@@ -97,9 +99,10 @@ export function Model3D({ model }: { model: Model }) {
     const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100)
     camera.position.set(4.6, 3, 5.4)
     camera.lookAt(0, 0, 0)
-    scene.add(new THREE.HemisphereLight(0xfff2e0, 0x2a2030, 1.3))
-    const sun = new THREE.DirectionalLight(0xffffff, 1.8)
-    sun.position.set(4, 7, 5)
+    // one hard key light from the side and almost no fill: deep shadows, bright edges
+    scene.add(new THREE.HemisphereLight(0xe8e8ee, 0x050507, 0.55))
+    const sun = new THREE.DirectionalLight(0xffffff, 2.8)
+    sun.position.set(6, 5, 1)
     scene.add(sun)
     const { group, parts } = build(model)
     const spin = new THREE.Group()
@@ -132,7 +135,7 @@ export function Model3D({ model }: { model: Model }) {
       const t = u < 0.5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2
       parts.forEach((p, i) => {
         p.place(t)
-        p.meshes.forEach((m) => (m.material as THREE.MeshLambertMaterial).emissive.setHex(hoverRef.current === i ? 0x5a3a10 : 0x000000))
+        p.meshes.forEach((m) => (m.material as THREE.MeshLambertMaterial).emissive.setHex(hoverRef.current === i ? 0x6a3e08 : 0x000000))
       })
       if (!drag && !reduced) spin.rotation.y += 0.004
       renderer.render(scene, camera)
@@ -156,7 +159,7 @@ export function Model3D({ model }: { model: Model }) {
       <ol className="ug-3d__parts">
         {names.map(([name, color], i) => (
           <li key={i} onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover(null)} data-on={hover === i || undefined}>
-            <span style={{ background: color }} />{name}
+            <span style={{ background: noirHex(color) }} />{name}
           </li>
         ))}
       </ol>

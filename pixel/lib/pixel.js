@@ -117,7 +117,7 @@ function grid(pix, W, H) {
   return G;
 }
 
-async function render({ id, outDir, colors = 40, dither = 7, seed, paint, details, upscale = 6, w: W = module.exports.W, h: H = module.exports.H }) {
+async function render({ id, outDir, colors = 40, dither = 7, seed, paint, details, grade, upscale = 6, w: W = module.exports.W, h: H = module.exports.H }) {
   const R = rng(seed || id);
   const hi = createCanvas(W * SS, H * SS), x = hi.getContext('2d');
   x.scale(SS, SS);
@@ -137,6 +137,8 @@ async function render({ id, outDir, colors = 40, dither = 7, seed, paint, detail
     pix[3 * i] = best[0]; pix[3 * i + 1] = best[1]; pix[3 * i + 2] = best[2];
   }
   if (details) details(grid(pix, W, H), R);
+  // a grade recolors the finished pixels, the detail pass's included: (r, g, b) => [r, g, b]
+  if (grade) for (let i = 0; i < pix.length; i += 3) pix.set(grade(pix[i], pix[i + 1], pix[i + 2]), i);
 
   const out = createCanvas(W * upscale, H * upscale), oc = out.getContext('2d');
   for (let y = 0; y < H; y++) for (let xx = 0; xx < W; xx++) {

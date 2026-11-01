@@ -40,7 +40,7 @@ export function ExplodedStage({ onOpen }: { onOpen: (index: number, from: DOMRec
       poster={{ open: true, tags: true }}
       script={script}
       play="once"
-      accent="#ffcf8a"
+      accent="#f0a63a"
       theme="dark"
       className="ug-exploded"
     >
