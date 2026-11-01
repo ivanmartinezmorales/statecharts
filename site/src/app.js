@@ -1,7 +1,7 @@
 'use strict';
 // The story player: shows the picture for the current state, the steps out of it, and a map of the whole chart.
-// A new picture arrives in blocks, then sharpens from big pixels to small ones. Hovering the picture pixelates it
-// under the pointer.
+// A new picture arrives in blocks, then sharpens from big pixels to small ones. Over the crisp pixels sits a soft
+// layer of light: bright parts bloom, stars twinkle, and motes drift up.
 (async () => {
   const W = 240, H = 160, BLOCK = 10;
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -18,7 +18,7 @@
   const canvas = $('scene'), ctx = canvas.getContext('2d');
   const tmp = document.createElement('canvas'), tctx = tmp.getContext('2d');
   ctx.imageSmoothingEnabled = false;
-  let shown = null, animating = false, lens = null, anim = 0;
+  let shown = null, animating = false, anim = 0;
 
   function pixelated(img, block) {
     const w = Math.max(1, Math.ceil(W / block)), h = Math.max(1, Math.ceil(H / block));
@@ -33,26 +33,18 @@
     ctx.drawImage(p.canvas, 0, 0, p.w, p.h, 0, 0, p.w * block, p.h * block);
   }
 
-  function drawLens() {
-    if (!shown || animating || !lens) return;
-    drawWhole(shown);
-    const p = pixelated(shown, 6);
-    ctx.save(); ctx.beginPath(); ctx.arc(lens.x, lens.y, 26, 0, Math.PI * 2); ctx.clip();
-    ctx.drawImage(p.canvas, 0, 0, p.w, p.h, 0, 0, p.w * 6, p.h * 6);
-    ctx.restore();
-  }
-
   function show(img) {
     const run = ++anim;
     if (reduceMotion || !shown) {
       if (!shown && !reduceMotion) return reveal(img, run);
-      shown = img; drawWhole(img); return Promise.resolve();
+      shown = img; drawWhole(img); glow.set(img); return Promise.resolve();
     }
     return reveal(img, run);
   }
 
   function reveal(img, run) {
     animating = true;
+    glow.hide();
     const blocks = [];
     for (let y = 0; y < H; y += BLOCK) for (let x = 0; x < W; x += BLOCK) blocks.push([x, y]);
     for (let i = blocks.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [blocks[i], blocks[j]] = [blocks[j], blocks[i]]; }
@@ -73,15 +65,88 @@
         const u = Math.min(1, (t - REVEAL) / SHARPEN), block = Math.max(1, Math.round(BLOCK - (1 - (1 - u) ** 2) * (BLOCK - 1)));
         drawWhole(img, block);
         if (u < 1) return requestAnimationFrame(frame);
-        shown = img; animating = false; drawLens(); done();
+        shown = img; animating = false; glow.set(img); done();
       };
       requestAnimationFrame(frame);
     });
   }
 
-  const at = (e) => { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) * (W / r.width), y: (e.clientY - r.top) * (H / r.height) }; };
-  canvas.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' && !reduceMotion) { lens = at(e); drawLens(); } });
-  canvas.addEventListener('pointerleave', () => { lens = null; if (shown && !animating) drawWhole(shown); });
+
+  // ---- the light, drawn smooth at screen resolution so it glows while the pixels stay sharp
+  const glow = (() => {
+    const layer = $('glow'), g = layer.getContext('2d', { colorSpace: 'display-p3' }) || layer.getContext('2d');
+    let img = null, bloom = null, stars = [], motes = [], fade = 0, target = 0, last = 0, R = Math.random;
+    const sprite = document.createElement('canvas');
+    sprite.width = sprite.height = 64;
+    { const x = sprite.getContext('2d'), r = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+      r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.14, 'rgba(255,250,232,0.75)');
+      r.addColorStop(0.42, 'rgba(255,238,200,0.16)'); r.addColorStop(1, 'rgba(255,238,200,0)');
+      x.fillStyle = r; x.fillRect(0, 0, 64, 64); }
+
+    function fit() {
+      const r = layer.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1);
+      layer.width = Math.max(1, Math.round(r.width * d)); layer.height = Math.max(1, Math.round(r.height * d));
+      if (img) study(img);
+    }
+
+    // Bright parts of the picture become the bloom; small points brighter than their surroundings are stars.
+    function study(im) {
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0);
+      const d = x.getImageData(0, 0, W, H).data, lum = (i) => (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255;
+      const pass = x.createImageData(W, H);
+      for (let i = 0; i < d.length; i += 4) { const k = Math.max(0, (lum(i) - 0.58) / 0.42); pass.data[i] = d[i]; pass.data[i + 1] = d[i + 1]; pass.data[i + 2] = d[i + 2]; pass.data[i + 3] = 255 * k; }
+      const bp = document.createElement('canvas'); bp.width = W; bp.height = H; bp.getContext('2d').putImageData(pass, 0, 0);
+      bloom = document.createElement('canvas'); bloom.width = layer.width; bloom.height = layer.height;
+      const bx = bloom.getContext('2d'), s = layer.width / W;
+      bx.filter = `blur(${(s * 2).toFixed(1)}px)`; bx.drawImage(bp, 0, 0, layer.width, layer.height);
+      bx.filter = `blur(${(s * 8).toFixed(1)}px)`; bx.drawImage(bp, 0, 0, layer.width, layer.height);
+      stars = [];
+      for (let y = 2; y < H - 2; y++) for (let xx = 2; xx < W - 2; xx++) {
+        const l = lum(4 * (y * W + xx));
+        if (l < 0.68) continue;
+        const around = [[-2, 0], [2, 0], [0, -2], [0, 2]].reduce((a, [dx, dy]) => a + lum(4 * ((y + dy) * W + xx + dx)), 0) / 4;
+        if (l - around < 0.22 || stars.some((t) => Math.abs(t.x - xx) < 3 && Math.abs(t.y - y) < 3)) continue;
+        stars.push({ x: xx, y, size: l, phase: R() * 6.28, speed: 0.7 + R() * 1.8 });
+        if (stars.length >= 140) break;
+      }
+      motes = Array.from({ length: 28 }, () => ({ x: R() * W, y: R() * H, vy: 1.2 + R() * 3, sway: 2 + R() * 5, phase: R() * 6.28, a: 0.15 + R() * 0.35 }));
+    }
+
+    function draw(now) {
+      const dt = Math.min(0.1, (now - last) / 1000 || 0); last = now;
+      fade += (target - fade) * Math.min(1, dt * 2.5);
+      g.clearRect(0, 0, layer.width, layer.height);
+      if (!bloom || fade < 0.01) return;
+      const s = layer.width / W, t = now / 1000;
+      g.globalCompositeOperation = 'lighter';
+      g.globalAlpha = fade * (0.5 + 0.12 * Math.sin(t * 0.6));
+      g.drawImage(bloom, 0, 0);
+      for (const st of stars) {
+        const tw = (0.5 + 0.5 * Math.sin(t * st.speed + st.phase)) ** 2, r = (2.5 + 5 * st.size * tw) * s, cx = (st.x + 0.5) * s, cy = (st.y + 0.5) * s;
+        g.globalAlpha = fade * (0.2 + 0.8 * tw);
+        g.drawImage(sprite, cx - r, cy - r, 2 * r, 2 * r);
+        if (tw > 0.7) { g.globalAlpha = fade * (tw - 0.7) * 2; g.drawImage(sprite, cx - r * 3, cy - r * 0.2, r * 6, r * 0.4); g.drawImage(sprite, cx - r * 0.2, cy - r * 3, r * 0.4, r * 6); }
+      }
+      for (const m of motes) {
+        m.y -= m.vy * dt; if (m.y < -4) { m.y = H + 4; m.x = R() * W; }
+        const x = (m.x + Math.sin(t * 0.5 + m.phase) * m.sway) * s, y = m.y * s, r = 1.6 * s;
+        g.globalAlpha = fade * m.a * (0.6 + 0.4 * Math.sin(t + m.phase));
+        g.drawImage(sprite, x - r, y - r, 2 * r, 2 * r);
+      }
+      g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+    }
+
+    const loop = (now) => { draw(now); requestAnimationFrame(loop); };
+    fit();
+    let resizing = 0;
+    addEventListener('resize', () => { clearTimeout(resizing); resizing = setTimeout(fit, 150); });
+    if (!reduceMotion) requestAnimationFrame(loop);
+    return {
+      set(im) { img = im; study(im); target = 1; if (reduceMotion) { fade = 1; draw(performance.now()); } },
+      hide() { target = 0; if (reduceMotion) { fade = 0; draw(performance.now()); } },
+    };
+  })();
 
   // ---- the map: states on a ring in story order, steps as arrows
   const NS = 'http://www.w3.org/2000/svg';
