@@ -121,6 +121,15 @@ pub struct Part {
     pub swing: Swing,
     #[serde(default)]
     pub stack: Stack,
+    /// Extra half-planes the part must lie in, each a line and a point on the kept side.
+    #[serde(default)]
+    pub clip: Vec<Clip>,
+}
+
+#[derive(Deserialize)]
+pub struct Clip {
+    pub line: Line,
+    pub side: V2,
 }
 
 #[derive(Deserialize)]
@@ -440,14 +449,33 @@ fn resolve_compound(faces: &[Face], parts: &[Part], id: &str) -> Stage {
                 continue;
             }
             match split(&p.face, &frame) {
-                (Some(pos), neg) if part.only.as_ref().is_none_or(|o| matches(&pos, o)) => {
+                (Some(mut pos), neg) if part.only.as_ref().is_none_or(|o| matches(&pos, o)) => {
                     let sibling = neg.map(|neg| {
                         uid += 1;
                         next.push(Piece { face: neg, part: None, swing: 0.0, stack: Stack::Place, sibling: None, uid });
                         uid
                     });
+                    // Trim to the clip half-planes; what falls outside stays where it is.
+                    let mut inside = true;
+                    for clip in &part.clip {
+                        match split(&pos, &Frame::new(clip.line, clip.side)) {
+                            (Some(kept), out) => {
+                                if let Some(out) = out {
+                                    uid += 1;
+                                    next.push(Piece { face: out, part: None, swing: 0.0, stack: Stack::Place, sibling: None, uid });
+                                }
+                                pos = kept;
+                            }
+                            (None, _) => {
+                                inside = false;
+                                break;
+                            }
+                        }
+                    }
                     uid += 1;
-                    candidates.push(next.len());
+                    if inside {
+                        candidates.push(next.len());
+                    }
                     next.push(Piece { face: pos, part: None, swing: 0.0, stack: Stack::Place, sibling, uid });
                 }
                 _ => next.push(p),
@@ -471,7 +499,7 @@ fn resolve_compound(faces: &[Face], parts: &[Part], id: &str) -> Stage {
 
 /// A reverse fold is one cut; the front half of the flap's layers folds one way, the back half the other.
 fn resolve_reverse(faces: &[Face], r: &Reverse, id: &str) -> Stage {
-    let part = Part { line: r.line, side: r.toward, only: None, over: vec![], swing: Swing::Up, stack: Stack::Place };
+    let part = Part { line: r.line, side: r.toward, only: None, over: vec![], swing: Swing::Up, stack: Stack::Place, clip: vec![] };
     let only = r.only.as_ref();
     let mut stage_pieces = Vec::new();
     let frame = Frame::new(part.line, part.side);

@@ -48,7 +48,10 @@ const quarterFolds: Step[] = [
  * onto the side it sits on; its back layer swings across the hinge and folds in half there.
  */
 function squashTriangle(p: Vec2, q: Vec2, r: Vec2, front: readonly Vec2[], back: readonly Vec2[]): Part[] {
-  const h = v((q.x + r.x) / 2, (q.y + r.y) / 2);
+  // The new crease bisects the corner at p, so the flap's folded edge pq lands on the hinge pr.
+  const dist = (a: Vec2, b: Vec2) => Math.hypot(a.x - b.x, a.y - b.y);
+  const k = dist(p, q) / (dist(p, q) + dist(p, r));
+  const h = v(q.x + (r.x - q.x) * k, q.y + (r.y - q.y) * k);
   const center: Line = [p, h];
   const hinge: Line = [p, r];
   return [
@@ -132,6 +135,82 @@ const birdBase: Step[] = [
   { kind: 'flip', text: 'Turn the model over.' },
   ...petal(square.left, innerLeft, 'top'),
 ];
+
+/** The inner triangles of a preliminary base: each is the back layer of one of its four flaps. */
+const flapBack = {
+  frontLeft: [v(50, 50), v(75, 75), v(50, 100)],
+  frontRight: [v(50, 50), v(75, 25), v(50, 0)],
+  backLeft: [v(50, 50), v(25, 25), v(50, 0)],
+  backRight: [v(50, 50), v(25, 75), v(50, 100)],
+};
+
+/** Moves the right half of the top flap over to the left, like turning a page. */
+function pageTurn(within: readonly Vec2[], text: string): Step {
+  return { kind: 'valley', line: [top, bottom], move: sideR, only: { within }, text };
+}
+
+/** A page turn from left to right. */
+function pageBack(within: readonly Vec2[], text: string): Step {
+  return { kind: 'valley', line: [top, bottom], move: sideL, only: { within }, text };
+}
+
+/** Preliminary base to the squashed frog base: squash each of the four flaps, turning pages in between. */
+const frogBase: Step[] = [
+  ...preliminaryBase,
+  {
+    kind: 'squash',
+    parts: squashTriangle(top, sideL, bottom, square.right, flapBack.frontLeft),
+    text: 'Lift the front left flap upright, open it, and squash it flat so its folded edge lands on the center line.',
+  },
+  pageTurn(flapBack.frontLeft, 'Turn the right half of that squashed flap over to the left, like a page.'),
+  {
+    kind: 'squash',
+    parts: squashTriangle(top, sideR, bottom, square.right, flapBack.frontRight),
+    text: 'Squash the right flap the same way.',
+  },
+  { kind: 'flip', text: 'Turn the model over.' },
+  {
+    kind: 'squash',
+    parts: squashTriangle(top, sideL, bottom, square.left, flapBack.backLeft),
+    text: 'Squash the left flap on this side.',
+  },
+  pageTurn(flapBack.backLeft, 'Turn the right half of it over to the left.'),
+  {
+    kind: 'squash',
+    parts: squashTriangle(top, sideR, bottom, square.left, flapBack.backRight),
+    text: 'Squash the last flap. All four flaps are now squashed.',
+  },
+];
+
+// The frog base petal fold lifts the top layer's point (where the squash put it) up across y = 75.
+const petalPoint = v(75, 85.36);
+const kiteL2 = v(64.65, 75);
+const kiteR2 = v(85.35, 75);
+const kiteSideL = v(60.36, 85.36);
+const kiteSideR = v(89.64, 85.36);
+
+/** Kite creases and a petal fold on the top layer of the front squashed flap. */
+function frogPetal(left: readonly Vec2[], right: readonly Vec2[], text: string): Step[] {
+  const kl: Line = [petalPoint, kiteL2];
+  const kr: Line = [petalPoint, kiteR2];
+  const across: Line = [kiteL2, kiteR2];
+  const keepLeft = [{ line: [top, bottom] as Line, side: sideL }];
+  const keepRight = [{ line: [top, bottom] as Line, side: sideR }];
+  return [
+    { kind: 'crease', line: kl, move: kiteSideL, only: { within: left, layers: 'front' }, text: 'Fold the lower left edge of the top layer to the center line, then unfold.' },
+    { kind: 'crease', line: kr, move: kiteSideR, only: { within: right, layers: 'front' }, text: 'Fold the lower right edge of the top layer to the center line, then unfold.' },
+    {
+      kind: 'petal',
+      parts: [
+        { line: kl, side: kiteSideL, only: { within: left, layers: 'front' }, over: [kl, across], clip: keepLeft },
+        { line: kr, side: kiteSideR, only: { within: right, layers: 'front' }, over: [kr, across], clip: keepRight },
+        { line: across, side: v(75, 80), only: { within: left, layers: 'front' }, clip: keepLeft },
+        { line: across, side: v(75, 80), only: { within: right, layers: 'front' }, clip: keepRight },
+      ],
+      text,
+    },
+  ];
+}
 
 /** Narrows one lower flap of the bird base by folding its outer edge to the center. */
 function narrow(side: 'left' | 'right', flap: readonly Vec2[], text: string): Step {
@@ -233,6 +312,59 @@ export const techniques: Model[] = [
 ];
 
 export const advanced: Model[] = [
+  {
+    slug: 'lily',
+    name: 'Lily',
+    level: 'advanced',
+    topic: 'flower',
+    about: 'Frog base, petal folds and curls',
+    color: '#edb51c',
+    paper: diamond,
+    whiteUp: true,
+    steps: [
+      ...frogBase,
+      ...frogPetal(flapBack.backRight, square.left, 'Lift the bottom point of the top flap up. The sides fold in along the creases: a petal fold.'),
+      pageBack(flapBack.backRight, 'Turn the left half of the top flap over to the right.'),
+      pageBack(flapBack.backLeft, 'Turn one more page to the right, so a plain flap faces you.'),
+      ...frogPetal(square.left, flapBack.backLeft, 'Petal fold this flap too.'),
+      { kind: 'flip', text: 'Turn the model over.' },
+      ...frogPetal(flapBack.frontRight, square.right, 'Petal fold the flap on this side.'),
+      pageBack(flapBack.frontRight, 'Turn the left half of the top flap over to the right.'),
+      pageBack(flapBack.frontLeft, 'Turn one more page to the right.'),
+      ...frogPetal(square.right, flapBack.frontLeft, 'Petal fold the last flap. This is the frog base.'),
+      {
+        kind: 'valley',
+        line: [bottom, kiteL2],
+        move: kiteSideL,
+        only: { within: square.right, layers: 'front' },
+        text: 'Fold the lower left edge of the front flap to the center line. The bottom gets long and thin.',
+      },
+      {
+        kind: 'valley',
+        line: [bottom, kiteR2],
+        move: kiteSideR,
+        only: { within: flapBack.frontLeft, layers: 'front' },
+        text: 'Fold the lower right edge to the center line too.',
+      },
+      { kind: 'flip', text: 'Turn the model over.' },
+      {
+        kind: 'valley',
+        line: [bottom, kiteL2],
+        move: kiteSideL,
+        only: { layers: 'front' },
+        text: 'Narrow this side the same way: lower left edge to the center.',
+      },
+      {
+        kind: 'valley',
+        line: [bottom, kiteR2],
+        move: kiteSideR,
+        only: { layers: 'front' },
+        text: 'And the lower right edge. Turn a page on each side and narrow the two inner flaps the same way.',
+      },
+      { kind: 'rotate', deg: 180, text: 'Turn the lily upside down: the four long thin flaps are the petals.' },
+    ],
+    finish: 'Pull the four long petals down and outward one at a time, then curl each one around a pencil. The lily opens.',
+  },
   {
     slug: 'flapping-bird',
     name: 'Flapping bird',

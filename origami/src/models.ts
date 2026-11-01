@@ -778,7 +778,6 @@ const models: Model[] = [
 export const all: readonly Model[] = [...basics, ...techniques, ...models, ...menagerie, ...advanced];
 
 export const upcoming: readonly Upcoming[] = [
-  { name: 'Lily', about: 'Frog base and curling' },
 ];
 
 export const levels: readonly { level: Level; title: string }[] = [

@@ -33,6 +33,8 @@ export interface Part {
   readonly swing?: 'up' | 'down';
   /** Where it lands in the stack: on top (default), underneath, between the layers it was cut from, or in place. */
   readonly stack?: 'top' | 'bottom' | 'inside' | 'place';
+  /** Extra half-planes the part must lie in: a line and a point on the side to keep. */
+  readonly clip?: readonly { readonly line: Line; readonly side: Vec2 }[];
 }
 
 export type Step =
