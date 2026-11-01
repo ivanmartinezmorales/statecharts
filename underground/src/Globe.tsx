@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { useReducedMotion } from './kit/reduced-motion'
 import { Detail } from './Detail'
 import { LookInside } from './Journey'
+import { gradeCanvas } from './noir.js'
 
 // The internet beyond the shore: a pixelated globe wrapped in its undersea cables, with light pulsing along every
 // one. Scrolling flies the camera: down into the sea off New York, across the Atlantic with one pulse of light to
@@ -44,22 +45,23 @@ const LAND: LonLat[][] = [
 ]
 
 // Longitudes past 180 or below -180 keep a route across the Pacific in one piece
-const CABLES: { name: string; route: LonLat[]; color: string }[] = [
-  { name: 'New York to Britain', route: [[-73.9, 40.5], [-60, 41.5], [-40, 48], [-20, 51], [-4.6, 50.8]], color: '#7fe0ff' },
-  { name: 'New York to France', route: [[-73.9, 40.5], [-50, 42], [-20, 46], [-4.5, 47.8]], color: '#5fb3ff' },
-  { name: 'Virginia to Spain', route: [[-76, 36.8], [-50, 40], [-20, 43], [-2.9, 43.4]], color: '#5fb3ff' },
-  { name: 'Brazil to Portugal', route: [[-38.5, -3.7], [-30, 10], [-20, 25], [-8.9, 37.9]], color: '#7fe0a0' },
-  { name: 'Florida to Brazil', route: [[-80.1, 26.1], [-70, 20], [-55, 8], [-38.5, -3.7]], color: '#7fe0a0' },
-  { name: 'Panama to Chile', route: [[-80.1, 26.1], [-80, 15], [-79.5, 9], [-80, -5], [-78, -20], [-71.6, -33]], color: '#7fe0a0' },
-  { name: 'California to Japan', route: [[-118.4, 33.9], [-150, 32], [-180, 33], [-210, 34], [-220.2, 35]], color: '#ffcf8a' },
-  { name: 'Oregon to Japan', route: [[-123.9, 45.5], [-160, 45], [-200, 40], [-220, 35.5]], color: '#ffcf8a' },
-  { name: 'California to Australia', route: [[-118.4, 33.9], [-157.8, 21.3], [-178, -18], [-208.8, -33.9]], color: '#ffcf8a' },
-  { name: 'Asia to Europe', route: [[103.8, 1.3], [95, 6], [80, 6], [73, 10], [60, 15], [50, 12.5], [43.4, 12.6], [38, 20], [33, 28], [32.5, 30], [30, 32], [20, 34], [10, 37], [5.4, 43.3]], color: '#ff9ac8' },
-  { name: 'Around West Africa', route: [[-9, 38.7], [-17, 28], [-17, 15], [-5, 4], [3.4, 6.4], [9, -1], [12, -6], [13, -20], [18.4, -33.9]], color: '#b48cff' },
-  { name: 'Around East Africa', route: [[18.4, -33.9], [32, -30], [40, -15], [42, -5], [39.7, -4], [50, 12], [43.4, 12.6]], color: '#b48cff' },
-  { name: 'Singapore to Japan', route: [[103.8, 1.3], [110, 10], [114.2, 22.3], [122, 25], [135, 30], [139.8, 35]], color: '#ff9ac8' },
-  { name: 'Singapore to Australia', route: [[103.8, 1.3], [105, -8], [110, -20], [115.8, -32]], color: '#ff9ac8' },
-  { name: 'India to Singapore', route: [[72.8, 19], [73, 10], [80, 6], [95, 6], [103.8, 1.3]], color: '#ff9ac8' },
+// every cable is drawn in the one color of light, amber; the grade leaves the rest of the world black and white
+const CABLES: { name: string; route: LonLat[] }[] = [
+  { name: 'New York to Britain', route: [[-73.9, 40.5], [-60, 41.5], [-40, 48], [-20, 51], [-4.6, 50.8]] },
+  { name: 'New York to France', route: [[-73.9, 40.5], [-50, 42], [-20, 46], [-4.5, 47.8]] },
+  { name: 'Virginia to Spain', route: [[-76, 36.8], [-50, 40], [-20, 43], [-2.9, 43.4]] },
+  { name: 'Brazil to Portugal', route: [[-38.5, -3.7], [-30, 10], [-20, 25], [-8.9, 37.9]] },
+  { name: 'Florida to Brazil', route: [[-80.1, 26.1], [-70, 20], [-55, 8], [-38.5, -3.7]] },
+  { name: 'Panama to Chile', route: [[-80.1, 26.1], [-80, 15], [-79.5, 9], [-80, -5], [-78, -20], [-71.6, -33]] },
+  { name: 'California to Japan', route: [[-118.4, 33.9], [-150, 32], [-180, 33], [-210, 34], [-220.2, 35]] },
+  { name: 'Oregon to Japan', route: [[-123.9, 45.5], [-160, 45], [-200, 40], [-220, 35.5]] },
+  { name: 'California to Australia', route: [[-118.4, 33.9], [-157.8, 21.3], [-178, -18], [-208.8, -33.9]] },
+  { name: 'Asia to Europe', route: [[103.8, 1.3], [95, 6], [80, 6], [73, 10], [60, 15], [50, 12.5], [43.4, 12.6], [38, 20], [33, 28], [32.5, 30], [30, 32], [20, 34], [10, 37], [5.4, 43.3]] },
+  { name: 'Around West Africa', route: [[-9, 38.7], [-17, 28], [-17, 15], [-5, 4], [3.4, 6.4], [9, -1], [12, -6], [13, -20], [18.4, -33.9]] },
+  { name: 'Around East Africa', route: [[18.4, -33.9], [32, -30], [40, -15], [42, -5], [39.7, -4], [50, 12], [43.4, 12.6]] },
+  { name: 'Singapore to Japan', route: [[103.8, 1.3], [110, 10], [114.2, 22.3], [122, 25], [135, 30], [139.8, 35]] },
+  { name: 'Singapore to Australia', route: [[103.8, 1.3], [105, -8], [110, -20], [115.8, -32]] },
+  { name: 'India to Singapore', route: [[72.8, 19], [73, 10], [80, 6], [95, 6], [103.8, 1.3]] },
 ]
 const CITIES: LonLat[] = [[-73.9, 40.7], [-0.1, 51.5], [2.3, 48.9], [139.8, 35.7], [-118.2, 34], [103.8, 1.3], [151.2, -33.9], [-46.6, -23.5], [3.4, 6.5], [72.8, 19], [18.4, -33.9], [114.2, 22.3], [-43.2, -22.9], [-87.6, 41.9], [13.4, 52.5]]
 
@@ -81,7 +83,7 @@ function curve(route: LonLat[], r = 1.006, per = 24) {
 function landTexture() {
   const W = 360, H = 180, c = document.createElement('canvas')
   c.width = W; c.height = H
-  const g = c.getContext('2d')!
+  const g = c.getContext('2d', { willReadFrequently: true })!
   const sea = g.createLinearGradient(0, 0, 0, H); sea.addColorStop(0, '#16305a'); sea.addColorStop(0.5, '#1d4a7a'); sea.addColorStop(1, '#16305a')
   g.fillStyle = sea; g.fillRect(0, 0, W, H)
   const xy = ([lon, lat]: LonLat): [number, number] => [((lon + 180) / 360) * W, ((90 - lat) / 180) * H]
@@ -92,6 +94,7 @@ function landTexture() {
   g.fillStyle = '#e8eef4'; g.fillRect(0, 0, W, 6); g.fillRect(0, H - 16, W, 16)
   // a little texture on land and sea
   for (let i = 0; i < 2400; i++) { const x = (i * 97) % W, y = (i * 61) % H; g.fillStyle = i % 3 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.08)'; g.fillRect(x, y, 1, 1) }
+  gradeCanvas(g, W, H)
   const t = new THREE.CanvasTexture(c)
   t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.colorSpace = THREE.SRGBColorSpace
   return t
@@ -165,46 +168,46 @@ export function Globe({ onBack, onClose }: { onBack: () => void; onClose: () => 
     if (!el) return
     const renderer = new THREE.WebGLRenderer({ antialias: false })
     renderer.setPixelRatio(1)
-    renderer.setClearColor(0x05040a)
+    renderer.setClearColor(0x050508)
     el.appendChild(renderer.domElement)
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(40, 1, 0.01, 50)
-    scene.add(new THREE.AmbientLight(0x8890b0, 0.9))
-    const sun = new THREE.DirectionalLight(0xfff2e0, 1.6)
+    scene.add(new THREE.AmbientLight(0xa0a2a8, 0.35))
+    const sun = new THREE.DirectionalLight(0xffffff, 2.6)
     scene.add(sun)
 
     const tex = landTexture()
     const globe = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), new THREE.MeshLambertMaterial({ map: tex, flatShading: true }))
     scene.add(globe)
-    const air = new THREE.Mesh(new THREE.SphereGeometry(1.07, 48, 32), new THREE.MeshBasicMaterial({ color: 0x5fa8ff, transparent: true, opacity: 0.12, side: THREE.BackSide, blending: THREE.AdditiveBlending }))
+    const air = new THREE.Mesh(new THREE.SphereGeometry(1.07, 48, 32), new THREE.MeshBasicMaterial({ color: 0xc0c4cc, transparent: true, opacity: 0.08, side: THREE.BackSide, blending: THREE.AdditiveBlending }))
     scene.add(air)
 
     // stars
     const starPts: number[] = []
     for (let i = 0; i < 900; i++) { const v = new THREE.Vector3().randomDirection().multiplyScalar(20 + Math.random() * 10); starPts.push(v.x, v.y, v.z) }
     const starGeo = new THREE.BufferGeometry(); starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPts, 3))
-    scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xfff6dd, size: 0.06 })))
+    scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0x9a9ca2, size: 0.05 })))
 
     // city lights
     const cityGeo = new THREE.BufferGeometry().setFromPoints(CITIES.map((c) => at(c, 1.004)))
-    scene.add(new THREE.Points(cityGeo, new THREE.PointsMaterial({ color: 0xffd890, size: 0.025 })))
+    scene.add(new THREE.Points(cityGeo, new THREE.PointsMaterial({ color: 0xf0a63a, size: 0.025 })))
 
     // cables, and pulses of light along them
     const routes = CABLES.map((c) => ({ ...c, pts: curve(c.route) }))
-    for (const r of routes) scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(r.pts), new THREE.LineBasicMaterial({ color: r.color, transparent: true, opacity: 0.75 })))
+    for (const r of routes) scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(r.pts), new THREE.LineBasicMaterial({ color: 0xf0a63a, transparent: true, opacity: 0.6 })))
     const PER = 5
     const pulseGeo = new THREE.BufferGeometry()
     pulseGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(routes.length * PER * 3), 3))
-    const pulses = new THREE.Points(pulseGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.018 }))
+    const pulses = new THREE.Points(pulseGeo, new THREE.PointsMaterial({ color: 0xffe6b0, size: 0.018 }))
     scene.add(pulses)
     // your request: one bright pulse on the New York to Britain cable
     const mine = routes[0].pts
     const meGeo = new THREE.BufferGeometry(); meGeo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0], 3))
-    const me = new THREE.Points(meGeo, new THREE.PointsMaterial({ color: 0xfff6c0, size: 0.05 }))
+    const me = new THREE.Points(meGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.05 }))
     scene.add(me)
     // repeaters along that cable
     const repGeo = new THREE.BufferGeometry().setFromPoints(mine.filter((_, i) => i % 6 === 3).map((v) => v.clone().multiplyScalar(1.002)))
-    scene.add(new THREE.Points(repGeo, new THREE.PointsMaterial({ color: 0xffcf8a, size: 0.012 })))
+    scene.add(new THREE.Points(repGeo, new THREE.PointsMaterial({ color: 0xe8e4da, size: 0.012 })))
 
     const pointAlong = (pts: THREE.Vector3[], u: number) => { const f = Math.max(0, Math.min(1, u)) * (pts.length - 1), i = Math.floor(f); return pts[i].clone().lerp(pts[Math.min(pts.length - 1, i + 1)], f - i) }
 

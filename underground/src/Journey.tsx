@@ -3,6 +3,7 @@ import { useReducedMotion } from './kit/reduced-motion'
 import type { Journey as Kind } from './components'
 import { COMPONENTS } from './components'
 import { Detail } from './Detail'
+import { gradeCanvas, rain } from './noir.js'
 
 // A system's whole world as one long pixel panorama (640 x 200), and one drop that travels through it as you scroll.
 // The camera follows the drop; at each stop, the caption says what happens there. Everything else keeps flowing.
@@ -18,10 +19,10 @@ type Scene = { title: string; path: Pt[]; stops: Stop[]; paint: (g: CanvasRender
 const px = (g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, c: string) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), w, h) }
 
 // ---- shared scenery
-function sky(g: CanvasRenderingContext2D, top: string, bottom: string, ground: number) {
-  const s = g.createLinearGradient(0, 0, 0, ground); s.addColorStop(0, top); s.addColorStop(1, bottom)
+// night, a little lighter near the ground where the street lights are
+function sky(g: CanvasRenderingContext2D, ground: number) {
+  const s = g.createLinearGradient(0, 0, 0, ground); s.addColorStop(0, '#0a0b12'); s.addColorStop(1, '#2a2c36')
   g.fillStyle = s; g.fillRect(0, 0, SW, ground)
-  for (let i = 0; i < 40; i++) px(g, (i * 97) % SW, (i * 37) % (ground - 20), 1, 1, 'rgba(255,245,220,0.6)')
 }
 function earth(g: CanvasRenderingContext2D, ground: number) {
   const e = g.createLinearGradient(0, ground, 0, SH); e.addColorStop(0, '#6b4a34'); e.addColorStop(0.45, '#4f3a2c'); e.addColorStop(0.5, '#4a4856'); e.addColorStop(1, '#2e2c38')
@@ -86,7 +87,7 @@ const water: Scene = {
   drop: () => ['#7fc4ff', '#e8f6ff'],
   paint(g, t) {
     const ground = 74
-    sky(g, '#1d1d4a', '#d9785a', ground)
+    sky(g, ground)
     earth(g, ground)
     g.fillStyle = '#2f4a3a'; g.beginPath(); g.moveTo(0, ground); g.lineTo(0, 30); g.lineTo(30, 44); g.lineTo(60, 26); g.lineTo(100, 46); g.lineTo(140, 34); g.lineTo(170, ground); g.fill()
     px(g, 18, 60, 94, 12, '#3f7fb0'); px(g, 18, 60, 94, 2, '#7fc4ff'); px(g, 110, 52, 8, 22, '#9a968c')
@@ -128,7 +129,7 @@ const wastewater: Scene = {
   drop: (p) => (p < 0.78 ? ['#8a7a4a', '#c9b88a'] : ['#7fc4ff', '#e8f6ff']),
   paint(g, t) {
     const ground = 74
-    sky(g, '#141a3f', '#3a3a7a', ground)
+    sky(g, ground)
     earth(g, ground)
     px(g, 6, 8, 84, ground - 8, '#7a4434'); for (let y = 14; y < ground - 6; y += 12) for (let x = 12; x < 84; x += 14) px(g, x, y, 8, 8, '#ffcf7a')
     px(g, 40, 44, 22, 5, '#e8e2d6'); px(g, 44, 36, 2, 8, '#a8b0bc')
@@ -170,7 +171,7 @@ const power: Scene = {
   drop: () => ['#ffe066', '#ffffff'],
   paint(g, t) {
     const ground = 74
-    sky(g, '#141a3f', '#5a3f78', ground)
+    sky(g, ground)
     earth(g, ground)
     px(g, 14, 30, 60, 44, '#5a6a7a'); px(g, 20, 40, 48, 6, '#3e4a56'); for (let x = 22; x < 66; x += 8) px(g, x, 52, 4, 10, '#ffd890')
     for (const sx of [24, 52]) { px(g, sx, 6, 8, 24, '#7a7a86'); for (let i = 0; i < 4; i++) { const r = 3 + i * 2; g.fillStyle = `rgba(220,220,230,${0.35 - i * 0.07})`; g.beginPath(); g.arc(sx + 4 + i * 3, 4 - cyc(t * 6 + i * 4, 16), r, 0, Math.PI * 2); g.fill() } }
@@ -209,7 +210,7 @@ const internet: Scene = {
   drop: () => ['#7fe0ff', '#ffffff'],
   paint(g, t) {
     const ground = 74
-    sky(g, '#0e1238', '#3a3a7a', ground)
+    sky(g, ground)
     earth(g, ground)
     px(g, 8, 26, 70, 48, '#7a4434'); g.fillStyle = '#5a3024'; g.beginPath(); g.moveTo(4, 26); g.lineTo(43, 8); g.lineTo(82, 26); g.fill()
     px(g, 20, 40, 44, 30, '#ffe0a0'); px(g, 30, 50, 14, 8, '#3a3a50'); px(g, 32, 51, 10, 6, '#7fe0ff'); px(g, 28, 58, 18, 2, '#5a5a66')
@@ -231,7 +232,7 @@ const internet: Scene = {
 }
 
 const SCENES: Record<Kind, Scene> = { water, wastewater, power, internet }
-const SKY: Record<Kind, string> = { water: '#1d1d4a', wastewater: '#141a3f', power: '#141a3f', internet: '#0e1238' }
+const SKY = '#05060a'
 
 // What you can look inside at each stop, by the stop's title
 const LOOK_INSIDE: Record<string, string[]> = {
@@ -307,7 +308,7 @@ export function Journey({ kind, onClose, onEnd, start = 0 }: { kind: Kind; onClo
 
   // Draw the world 12 times a second; ease the drop and the camera every frame
   useEffect(() => {
-    const g = canvas.current?.getContext('2d')
+    const g = canvas.current?.getContext('2d', { willReadFrequently: true })
     if (!g) return
     let raf = 0, lastF = -1
     const tick = (now: number) => {
@@ -317,7 +318,7 @@ export function Journey({ kind, onClose, onEnd, start = 0 }: { kind: Kind; onClo
       const [dx, dy] = along(scene.path, p.now)
       if (f !== lastF || reduced) {
         lastF = f
-        g.fillStyle = SKY[kind]; g.fillRect(0, 0, SW, TOP + SH)
+        g.fillStyle = SKY; g.fillRect(0, 0, SW, TOP + SH)
         g.save(); g.translate(0, TOP)
         scene.paint(g, reduced ? 2 : t)
         if (scene === power && p.now > 0.97) { px(g, 586, 32, 6, 6, '#fff6c0'); const lit = g.createRadialGradient(589, 35, 0, 589, 35, 14); lit.addColorStop(0, 'rgba(255,240,170,0.6)'); lit.addColorStop(1, 'rgba(255,240,170,0)'); g.fillStyle = lit; g.fillRect(575, 21, 28, 28) }
@@ -326,6 +327,8 @@ export function Journey({ kind, onClose, onEnd, start = 0 }: { kind: Kind; onClo
         g.fillStyle = halo; g.fillRect(dx - 10, dy - 10, 20, 20)
         px(g, dx - 1, dy - 3, 2, 1, body); px(g, dx - 2, dy - 2, 4, 4, body); px(g, dx - 1, dy - 1, 1, 1, shine)
         g.restore()
+        rain(g, t, SW, TOP + 72)
+        gradeCanvas(g, SW, TOP + SH)
       }
       // The camera follows the drop like a demo reel: it glides in close at each stop and eases back out between
       // them (a balloon zoom), rising and sinking with it. It never rolls.
@@ -341,7 +344,7 @@ export function Journey({ kind, onClose, onEnd, start = 0 }: { kind: Kind; onClo
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [scene, reduced, kind])
+  }, [scene, reduced])
 
   const st = scene.stops[stop]
   return (

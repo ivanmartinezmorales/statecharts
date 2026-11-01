@@ -12,8 +12,10 @@ const C = {
 };
 
 function sky(P) {
-  P.vgrad(0, 0, W, Y.street, [[0, '#1d1d4a'], [0.55, '#5a3f78'], [0.85, '#d9785a'], [1, '#f2b06a']]);
-  for (let i = 0; i < 30; i++) P.rect(P.R() * W, P.R() * 40, 0.7, 0.7, 'rgba(255,240,220,0.7)');
+  // night, with a haze of street light low down and a moon behind a bank of cloud
+  P.vgrad(0, 0, W, Y.street, [[0, '#04050a'], [0.55, '#0e1018'], [1, '#2c2e38']]);
+  P.glow(150, 18, 30, '#c8ccd8', 0.35); P.circle(150, 18, 7, '#e8e8ee'); P.circle(152, 16, 2, '#c8ccd4');
+  P.rect(118, 20, 70, 3, '#14161e'); P.rect(130, 24, 48, 2, '#1c1e28'); P.rect(108, 23, 30, 2, '#1c1e28');
 }
 
 function buildings(P) {
@@ -32,7 +34,7 @@ function buildings(P) {
   P.rect(220, 66, 92, 30, '#2a2e3a'); P.rect(224, 70, 84, 22, '#ffe3a8'); P.glow(266, 80, 40, '#ffd890', 0.5);
   for (let i = 0; i < 8; i++) P.poly([[216 + i * 12, 58], [228 + i * 12, 58], [226 + i * 12, 66], [218 + i * 12, 66]], i % 2 ? '#e8e2d6' : '#c4503f');
   // a street lamp, a hydrant, a walker
-  P.rect(178, 52, 2, 44, '#2a2a34'); P.rect(172, 50, 14, 3, '#2a2a34'); P.rect(173, 53, 6, 3, '#fff1c0'); P.glow(176, 56, 46, '#ffe0a0', 0.75);
+  P.rect(178, 52, 2, 44, '#2a2a34'); P.rect(172, 50, 14, 3, '#2a2a34'); P.rect(173, 53, 6, 3, '#fff1c0'); P.glow(176, 56, 30, '#ffb040', 0.7); P.beam([[176, 55], [146, 96], [206, 96]], '#ff9a1a', 0.55);
   P.rrect(270, 86, 6, 10, 2, '#c4503f'); P.rect(268, 89, 10, 2, '#c4503f');
   P.circle(296, 76, 3, '#2a2030'); P.rrect(293, 79, 7, 11, 2, '#3f6f8a'); P.rect(294, 90, 2, 6, '#2a2030'); P.rect(297, 90, 2, 6, '#2a2030');
 }
