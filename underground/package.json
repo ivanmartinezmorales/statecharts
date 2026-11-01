@@ -1,0 +1,23 @@
+{
+  "name": "under-the-street",
+  "private": true,
+  "license": "MIT",
+  "description": "A pixel-art cutaway of a city street, one layer at a time.",
+  "type": "module",
+  "scripts": {
+    "picture": "node scripts/picture.cjs",
+    "dev": "npm run picture && vite",
+    "build": "npm run picture && vite build",
+    "preview": "vite preview --port 5320",
+    "deploy": "npm run build && vercel deploy dist --prod --yes --project under-the-street --scope ivanmartinez-8194s-projects"
+  },
+  "dependencies": {
+    "lucide-react": "0.468.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "4.7.0",
+    "vite": "6.4.5"
+  }
+}

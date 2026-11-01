@@ -1,0 +1,179 @@
+:root {
+  --bg: #120d18;
+  --panel: #1c1524;
+  --ink: #efe6ff;
+  --muted: #a998c8;
+  --warm: #ffcf8a;
+  --line: #3a2a4a;
+  --pixel: "Pixelify Sans", ui-monospace, Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--bg); scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 18px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+main { max-width: 1000px; margin: 0 auto; padding: 32px 16px 56px; }
+
+h1, h2 { font-family: var(--pixel); font-weight: 600; margin: 0; }
+h1 { font-size: 44px; color: var(--warm); letter-spacing: 1px; }
+h2 { font-size: 30px; color: var(--warm); }
+a { color: var(--warm); }
+
+/* ---- the cutaway pulled apart, with a caption for the open layer */
+.ug-hero { max-width: 640px; margin-bottom: 24px; }
+.ug-hero p { color: var(--muted); }
+
+.ug-explode { display: grid; grid-template-columns: minmax(0, 640px) minmax(0, 1fr); gap: 32px; align-items: start; margin-bottom: 96px; }
+.ug-caption { position: sticky; top: 24px; }
+.ug-caption h2 { margin-bottom: 8px; }
+.ug-caption p { color: #d8cdea; }
+.ug-caption__hint { color: var(--muted) !important; font-size: 15px; }
+.ug-caption__actions { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.ug-caption__actions button {
+  font: 600 16px var(--pixel); color: #1c1208; background: var(--warm); border: 0; border-radius: 4px;
+  padding: 8px 14px 9px; box-shadow: 0 3px 0 #b9864a; cursor: pointer;
+}
+.ug-caption__actions button:active { transform: translateY(2px); box-shadow: 0 1px 0 #b9864a; }
+
+.ug-exploded .ss-stage { background: transparent; }
+
+.ug-slice {
+  position: absolute;
+  z-index: 2;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  background: #0e0a12;
+  cursor: pointer;
+  border-radius: 2px;
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.8);
+  transition: left 0.65s cubic-bezier(0.65, 0, 0.35, 1), top 0.65s cubic-bezier(0.65, 0, 0.35, 1), width 0.65s cubic-bezier(0.65, 0, 0.35, 1), height 0.65s cubic-bezier(0.65, 0, 0.35, 1), filter 0.3s ease, outline-color 0.2s ease;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+.ug-slice img, .ug-slice canvas { position: absolute; left: 0; image-rendering: pixelated; transition: width 0.65s cubic-bezier(0.65, 0, 0.35, 1), height 0.65s cubic-bezier(0.65, 0, 0.35, 1), top 0.65s cubic-bezier(0.65, 0, 0.35, 1); }
+.ug-slice:hover { outline-color: rgba(255, 207, 138, 0.7); }
+.ug-slice:focus-visible { outline-color: var(--warm); }
+.ug-slice[data-out] { z-index: 3; outline-color: rgba(255, 207, 138, 0.9); }
+.ug-slice[data-back] { filter: brightness(0.6) saturate(0.7); }
+.ug-slice[data-back]:hover { filter: brightness(0.85); }
+
+.ug-tag {
+  position: absolute;
+  z-index: 21;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 6px 10px 7px;
+  border: 1px solid rgba(255, 207, 138, 0.45);
+  border-radius: 4px;
+  background: rgba(18, 12, 26, 0.92);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.35s ease, transform 0.35s ease, top 0.65s cubic-bezier(0.65, 0, 0.35, 1), left 0.65s cubic-bezier(0.65, 0, 0.35, 1), border-color 0.2s ease;
+}
+.ug-tag[data-on] { opacity: 1; transform: none; }
+.ug-tag:hover { border-color: var(--warm); }
+.ug-tag span { font: 600 15px/1 var(--pixel); color: #ffe9c0; }
+.ug-tag small { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.ug-tag--on-slice { z-index: 4; padding: 4px 8px 5px; pointer-events: none; font: 600 13px/1 var(--pixel); color: #ffe9c0; transition: opacity 0.35s ease, top 0.65s cubic-bezier(0.65, 0, 0.35, 1), left 0.65s cubic-bezier(0.65, 0, 0.35, 1); }
+
+/* ---- one layer: its words beside its stage */
+.ug-layer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 640px);
+  gap: 32px;
+  align-items: center;
+  margin: 0 0 88px;
+  scroll-margin-top: 24px;
+}
+.ug-layer__step { font-family: var(--pixel); color: var(--muted); font-size: 14px; margin: 0 0 6px; }
+.ug-layer__copy p:last-child { color: #d8cdea; }
+
+/* The stage holds the picture's strip and the labels drawn over it. */
+.ug-stage .ss-stage { background: #0e0a12; border-radius: 4px; }
+.ug-strip { position: absolute; left: 0; top: 0; right: 0; overflow: hidden; }
+.ug-strip img, .ug-strip canvas { position: absolute; left: 0; image-rendering: pixelated; }
+.ug-workers { pointer-events: none; }
+
+.ug-note {
+  position: absolute;
+  z-index: 22;
+  font: 600 13px/1 var(--pixel);
+  color: #ffe9c0;
+  background: rgba(18, 12, 26, 0.9);
+  border: 1px solid rgba(255, 207, 138, 0.55);
+  border-radius: 4px;
+  padding: 5px 8px 6px;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(3px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.ug-note[data-on] { opacity: 1; transform: none; }
+.ug-leader { --ss-accent: #ffcf8a; }
+
+.ug-marker {
+  position: absolute;
+  z-index: 22;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  background: var(--warm);
+  color: #1c1208;
+  font: 600 11px/18px var(--pixel);
+  text-align: center;
+  box-shadow: 0 0 0 2px rgba(18, 12, 26, 0.85);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+.ug-marker[data-on] { opacity: 1; transform: none; }
+
+.ug-legend { position: absolute; left: 4px; right: 4px; margin: 0; padding: 0; list-style: none; }
+.ug-legend li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 26px;
+  font: 600 14px/1 var(--pixel);
+  color: var(--ink);
+  opacity: 0.25;
+  transition: opacity 0.3s ease;
+}
+.ug-legend li[data-on] { opacity: 1; }
+.ug-legend li span {
+  width: 18px; height: 18px; border-radius: 50%; background: var(--warm); color: #1c1208;
+  font-size: 11px; line-height: 18px; text-align: center; flex: none;
+}
+
+footer { color: var(--muted); font-size: 15px; border-top: 2px solid var(--line); padding-top: 20px; }
+
+@media (max-width: 860px) {
+  .ug-explode { grid-template-columns: 1fr; gap: 16px; }
+  .ug-caption { position: static; min-height: 0; }
+  .ug-layer { grid-template-columns: 1fr; gap: 16px; }
+}
+
+@media (max-width: 520px) {
+  body { font-size: 17px; }
+  h1 { font-size: 34px; }
+  h2 { font-size: 26px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
