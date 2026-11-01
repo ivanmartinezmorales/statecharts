@@ -3,12 +3,16 @@
 // lit up, how far apart the exploded parts are, which systems are flowing) and asks for a frame; the engine draws it
 // into its own memory, and the page reads the picture, the glow and the bloom straight out of that memory.
 
+mod cabin;
 mod d3;
+mod flightdeck;
 mod gfx;
 mod pal;
 mod plane3d;
 mod runway;
+mod screens;
 mod set;
+mod turbofan;
 mod xray;
 
 use d3::{Cam, Frame, V3, v};
@@ -49,9 +53,12 @@ type Draw = fn(&mut Canvas, &mut Frame, V3, Option<&Params>);
 type Focus = fn(i32) -> u8;
 
 /// The dioramas: where each stands in the world (a row along x), how to draw it, and its focusable parts.
-const SETS: [(V3, Draw, Focus); 2] = [
+const SETS: [(V3, Draw, Focus); 5] = [
     (v(0.0, 0.0, 0.0), runway::draw, runway::focus_id),
     (v(200.0, 0.0, 0.0), xray::draw, xray::focus_id),
+    (v(400.0, 0.0, 0.0), flightdeck::draw, flightdeck::focus_id),
+    (v(600.0, 0.0, 0.0), turbofan::draw, turbofan::focus_id),
+    (v(800.0, 0.0, 0.0), cabin::draw, cabin::focus_id),
 ];
 pub const ORIGINS: [V3; SETS.len()] = {
     let mut o = [v(0.0, 0.0, 0.0); SETS.len()];
