@@ -290,9 +290,6 @@ pub struct Cam {
     hh: f32,
 }
 
-/// The pitch that makes a unit square's diagonal step two pixels across for one down: 2:1 isometric pixel art.
-pub const ISO_PITCH: f32 = 0.463_647_6;
-
 impl Cam {
     pub fn new(target: V3, yaw: f32, pitch: f32, dist: f32, w: usize, h: usize) -> Cam {
         let (sp, cp) = pitch.sin_cos();
