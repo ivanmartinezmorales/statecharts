@@ -42,7 +42,13 @@ function street(P) {
   P.rect(104, Y.street + 1, 154, 7, '#3a3a42');
   for (let x = 112; x < 252; x += 18) P.rect(x, Y.street + 4, 8, 1, '#e8d890');
   P.rect(100, Y.street, 4, 8, '#c9c4b8'); P.rect(258, Y.street, 4, 8, '#c9c4b8');
-  P.rect(144, Y.street + 1, 16, 2, '#1e1e24');
+  // the road crew's work site: the manhole open with its cover leaning aside, cones and a barricade
+  P.rect(144, Y.street + 1, 16, 3, '#0e0c12');
+  P.ellipse(166, 92, 2, 5, '#4a4a54'); P.ellipse(165.5, 92, 1.2, 4.4, '#6a6a74');
+  for (const cx of [108, 242]) { P.poly([[cx - 3, 96], [cx + 3, 96], [cx + 1, 87], [cx - 1, 87]], '#f07a2a'); P.rect(cx - 2, 91, 4, 1.4, '#f4f0e0'); P.rect(cx - 4, 95, 8, 1.6, '#c4501f'); }
+  P.rect(173, 84, 20, 4, '#f07a2a'); for (let x = 175; x < 193; x += 6) P.poly([[x, 84], [x + 3, 84], [x + 1, 88], [x - 2, 88]], '#f4f0e0');
+  P.line([[175, 88], [173, 96]], '#3a3a42', 1); P.line([[191, 88], [193, 96]], '#3a3a42', 1);
+  P.circle(176, 82, 1.2, '#ffcf5a'); P.glow(176, 82, 8, '#ffcf5a', 0.6);
   P.rect(262, Y.street + 6, 10, 2, '#1e1e24');
   // the cut through the road: asphalt, concrete base, gravel bed
   P.rect(0, Y.cut, W, 4, '#2c2c34'); P.rect(0, Y.cut + 4, W, 6, C.concrete); P.fleckRect(0, Y.cut + 4, W, 6, ['#b0aca2', '#7e7a72'], 0.6, 0.8);
