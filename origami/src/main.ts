@@ -2,6 +2,7 @@ import './style.css';
 import { all, levels } from './models';
 import { picker, topics, type Filter } from './picker';
 import { workspace } from './workspace';
+import { drawer } from './drawer';
 import { done } from './progress';
 import { ready } from './engine';
 
@@ -30,6 +31,9 @@ function renderBar() {
           })
           .join('')}
       </ol>
+      <a class="drawer-link" href="#/drawer" ${location.hash === '#/drawer' ? 'aria-current="page"' : ''} aria-label="Your paper drawer, ${done.size} folded">
+        <span class="drawer-icon" aria-hidden="true"></span><span class="drawer-name">Drawer</span><span class="drawer-count" aria-hidden="true">${done.size}</span>
+      </a>
     </div>`;
 }
 
@@ -37,17 +41,19 @@ let teardown: (() => void) | null = null;
 
 function route() {
   teardown?.();
-  const [, page, arg] = location.hash.split('/');
+  const [, page, arg, step] = location.hash.split('/');
   const model = page === 'fold' ? all.find((m) => m.slug === arg) : undefined;
   if (model) {
-    teardown = workspace(app, model);
+    teardown = workspace(app, model, Number(step) - 1 || 0);
+  } else if (page === 'drawer') {
+    teardown = drawer(app);
   } else {
     const level = page === 'level' ? levels.find((l) => l.level === arg)?.level : undefined;
     const topic = page === 'topic' ? topics.find((t) => t.topic === arg)?.topic : undefined;
     const filter: Filter = level ? { by: 'level', level } : topic ? { by: 'topic', topic } : { by: 'all' };
     teardown = picker(app, filter);
   }
-  document.title = model ? `${model.name} · Origami` : 'Origami: learn to fold, step by step';
+  document.title = model ? `${model.name} · Origami` : page === 'drawer' ? 'Your paper drawer · Origami' : 'Origami: learn to fold, step by step';
   renderBar();
   window.scrollTo(0, 0);
 }
