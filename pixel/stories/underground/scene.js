@@ -124,12 +124,7 @@ function sewer(P) {
   P.vgrad(x0 + 4, bottom - 14, W - x0 - 4, 14, [[0, '#4f6e5a'], [1, '#2a3a30']]);
   for (let i = 0; i < 26; i++) P.rect(x0 + 8 + P.R() * (W - x0 - 16), bottom - 12 + P.R() * 10, 3 + P.R() * 6, 0.6, 'rgba(200,230,210,0.35)');
   P.rect(142, top, 20, 6, '#1a1418');
-  // a sewer worker with a headlamp, and a rat
-  P.beam([[214, 236], [214, 240], [318, 268], [318, 226]], '#fff2c0', 0.35);
-  P.rrect(204, 238, 12, 20, 3, '#e8c04a'); P.rect(205, 248, 10, 2, '#cfd6dc'); P.rect(206, 258, 3, 6, '#2a2a30'); P.rect(211, 258, 3, 6, '#2a2a30');
-  P.circle(210, 233, 4.6, '#d9a07a'); P.ellipse(210, 230, 5.4, 3, '#e8c04a'); P.rect(212, 231, 3, 2, '#fff8d8'); P.glow(214, 232, 18, '#fff2c0', 0.8);
-  P.rect(200, 240, 2, 22, '#5a4a3a');
-  P.ellipse(258, 262, 5, 2.6, '#5a5058'); P.circle(263, 261, 2, '#5a5058'); P.line([[253, 262], [246, 264]], '#7a6870', 0.6);
+  // The worker, the rats and the flowing water are drawn live on the page, over this picture.
   P.glow(130, 246, 30, '#9ab8a0', 0.25);
 }
 
@@ -140,12 +135,7 @@ function subway(P) {
   for (const lx of [130, 200, 270]) { P.rect(lx, top + 2, 8, 2, '#fff1c0'); P.glow(lx + 4, top + 4, 26, '#fff1c0', 0.4); }
   P.rect(x0, bottom - 6, W - x0, 2, '#8a8a96'); for (let x = x0; x < W; x += 8) P.rect(x, bottom - 4, 5, 4, '#4a3a30');
   P.rect(x0, bottom - 9, W - x0, 1, '#c9a060');
-  // the train
-  P.rrect(126, top + 12, 194, 40, 4, '#a8b0bc'); P.rect(126, top + 40, 194, 3, '#3f6fb0'); P.rect(126, top + 12, 194, 3, '#c9d0da');
-  for (let x = 134; x < 314; x += 22) { P.rect(x, top + 19, 15, 13, '#ffe0a0'); P.glow(x + 7, top + 25, 16, '#ffe0a0', 0.45); }
-  for (const x of [140, 178, 222, 266]) { P.circle(x, top + 25, 2.2, '#3a3040'); P.rect(x - 2, top + 27, 4, 5, '#3a3040'); }
-  P.rect(126, top + 52, 194, 4, '#3a3a44'); for (const x of [140, 168, 280, 308]) P.circle(x, top + 56, 3, '#2a2a30');
-  P.rect(126, top + 16, 3, 32, '#e8c04a');
+  // The train is drawn live on the page, so it can pull in and out.
 }
 
 function waterTunnel(P) {
