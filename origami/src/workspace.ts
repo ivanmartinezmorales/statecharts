@@ -140,7 +140,20 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
 
   // The loop calls draw() every frame, so only touch the DOM for what actually changed.
   const setText = (el: HTMLElement, value: string) => {
-    if (el.textContent !== value) el.textContent = value;
+    if (el.textContent === value) return false;
+    el.textContent = value;
+    return true;
+  };
+  // New copy rises in on the same curve as the page; the first paint and reduced motion stay still.
+  const motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let drawn = false;
+  const enter = (el: HTMLElement, rise: number, ms: number) => {
+    if (motion && drawn) {
+      el.animate([{ opacity: 0, transform: `translateY(${rise}px)` }, { opacity: 1, transform: 'none' }], {
+        duration: ms,
+        easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      });
+    }
   };
   const setAttr = (el: Element, name: string, value: string) => {
     if (el.getAttribute(name) !== value) el.setAttribute(name, value);
@@ -150,12 +163,12 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
     const step = steps[i]!;
     paper.draw(i, eased(t), cam, complete());
     setAttr(canvas, 'aria-label', step.text);
-    setText(count, `Step ${i + 1} of ${steps.length}`);
-    setText(instruction, step.text);
+    if (setText(count, `Step ${i + 1} of ${steps.length}`)) enter(count, 0, 160);
+    if (setText(instruction, step.text)) enter(instruction, 6, 280);
     const lesson = lessonFor(step);
     symbol.hidden = lesson.slug === model.slug;
     setAttr(symbol, 'href', `#/fold/${lesson.slug}`);
-    setText(symbol, `Uses the ${lesson.name} symbol`);
+    if (setText(symbol, `Uses the ${lesson.name} symbol`)) enter(symbol, 6, 280);
     setText(tip, tips[step.kind]);
     // Keep the address on the current step, so a reload or a shared link lands here.
     const here = `#/fold/${model.slug}${i ? `/${i + 1}` : ''}`;
@@ -191,6 +204,7 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
       });
       finish.querySelector('.share')!.addEventListener('click', () => void share());
     }
+    drawn = true;
   }
 
   async function share() {
