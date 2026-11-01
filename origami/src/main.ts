@@ -21,7 +21,7 @@ function renderBar() {
   if (!bar.firstElementChild) {
     bar.innerHTML = `
     <div class="bar-row">
-      <a class="brand" href="#/"><span class="mark" aria-hidden="true">折</span>Origami</a>
+      <a class="brand" href="#/"><span class="mark" aria-hidden="true">折</span>Foldable Art</a>
       <ol class="path" aria-label="Learning path">
         ${stations
           .map(
@@ -32,7 +32,7 @@ function renderBar() {
           .join('')}
       </ol>
       <a class="drawer-link" href="#/drawer">
-        <span class="drawer-icon" aria-hidden="true"></span><span class="drawer-name">Drawer</span><span class="drawer-count" aria-hidden="true"></span>
+        <span class="drawer-icon" aria-hidden="true"></span><span class="drawer-name">My folds</span><span class="drawer-count" aria-hidden="true"></span>
       </a>
     </div>`;
   }
@@ -66,7 +66,7 @@ function render() {
     const filter: Filter = level ? { by: 'level', level } : topic ? { by: 'topic', topic } : { by: 'all' };
     teardown = picker(app, filter);
   }
-  document.title = model ? `${model.name} · Origami` : page === 'drawer' ? 'Your paper drawer · Origami' : 'Origami: learn to fold, step by step';
+  document.title = model ? `${model.name} · Foldable Art` : page === 'drawer' ? 'My folds · Foldable Art' : 'Foldable Art: learn origami, one fold at a time';
   renderBar();
   window.scrollTo(0, 0);
 }
