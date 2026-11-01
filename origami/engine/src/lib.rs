@@ -74,7 +74,7 @@ impl Diagram {
     ) -> Vec<u8> {
         let i = step.min(self.stages.len() - 1);
         let pal = Palette { stage: rgb(stage), stage_dot: rgb(stage_dot), paper: rgb(paper), paper_back: rgb(paper_back), ink: rgb(ink) };
-        if self.mat.as_ref().map_or(true, |(key, _)| *key != [stage, stage_dot]) {
+        if self.mat.as_ref().is_none_or(|(key, _)| *key != [stage, stage_dot]) {
             self.mat = Some(([stage, stage_dot], mat(&pal)));
         }
         self.canvas.px.copy_from_slice(&self.mat.as_ref().expect("mat").1.px);
@@ -97,8 +97,8 @@ impl Diagram {
             .after
             .iter()
             .map(|f| {
-                let pts: Vec<String> = f.pts.iter().map(|p| format!("[{},{}]", p.x, p.y)).collect();
-                format!("{{\"layer\":{},\"pts\":[{}]}}", f.layer, pts.join(","))
+                let list = |ps: &[V2]| ps.iter().map(|p| format!("[{},{}]", p.x, p.y)).collect::<Vec<_>>().join(",");
+                format!("{{\"layer\":{},\"pts\":[{}],\"orig\":[{}]}}", f.layer, list(&f.pts), list(&f.orig))
             })
             .collect();
         format!("[{}]", faces.join(","))

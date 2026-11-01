@@ -2,7 +2,7 @@
 
 use serde::Deserialize;
 
-use crate::geom::{area, bounds, centroid, reflect, Face, FoldKind, Frame, Stage, Step, V2};
+use crate::geom::{area, bounds, centroid, reflect, reflect_all, Face, FoldKind, Frame, Line, Motion, Stage, Step, V2};
 use crate::raster::{hash, mix, scale, Canvas, Rgb};
 
 /// Canvas resolution. The page scales it up with nearest-neighbour sampling for the pixel look.
@@ -44,7 +44,7 @@ pub struct Palette {
     pub ink: Rgb,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 struct V3 {
     x: f64,
     y: f64,
@@ -136,7 +136,10 @@ fn paint_order<'a>(p: &'a Pose, faces: &[Face], cam: Camera) -> Vec<&'a (usize, 
     let stack = |s: &'a Sheet| {
         let mut v: Vec<_> = s.faces.iter().collect();
         let front = facing(s);
-        v.sort_by_key(|(i, _)| if front { faces[*i].layer } else { -faces[*i].layer });
+        v.sort_by(|(i, _), (j, _)| {
+            let (a, b) = (faces[*i].layer, faces[*j].layer);
+            if front { a.total_cmp(&b) } else { b.total_cmp(&a) }
+        });
         v
     };
     let still = stack(&p.still);
@@ -151,6 +154,45 @@ fn paint_order<'a>(p: &'a Pose, faces: &[Face], cam: Camera) -> Vec<&'a (usize, 
             }
         }
     }
+}
+
+/// Rotates a point about a line by `theta`, lifting it toward you when `swing` is 1 and away when -1.
+fn hinge(p: V2, f: &Frame, theta: f64, swing: f64) -> V3 {
+    let along = p.sub(f.a).dot(f.u);
+    let r = p.sub(f.a).dot(f.n);
+    let rc = r * theta.cos();
+    V3 { x: f.a.x + f.u.x * along + f.n.x * rc, y: f.a.y + f.u.y * along + f.n.y * rc, z: swing * r * theta.sin() }
+}
+
+/// Poses and orders a compound fold. Each moving face works through its lines one after another,
+/// so a petal's sides fold in before they swing up. Faces paint in stack order: where they were for
+/// the first half of the move, where they land for the second.
+fn compound_pose(stage: &Stage, motion: &[Option<Motion>], t: f64, cam: Camera) -> Vec<(usize, Vec<V3>)> {
+    let e = ease(t);
+    let mut posed: Vec<(usize, Vec<V3>, f64)> = stage
+        .faces
+        .iter()
+        .enumerate()
+        .map(|(i, face)| match &motion[i] {
+            None => (i, face.pts.iter().map(|&p| flat(p)).collect(), face.layer),
+            Some(m) => {
+                let k = m.over.len();
+                let at = e * k as f64;
+                let seg = (at.floor() as usize).min(k - 1);
+                let local = at - seg as f64;
+                let pts: Vec<V2> = face.pts.iter().map(|&p| reflect_all(p, &m.over[..seg])).collect();
+                let frame = Frame::new(m.over[seg], centroid(&pts));
+                let theta = std::f64::consts::PI * local;
+                let key = if e < 0.5 { face.layer } else { stage.after[i].layer };
+                (i, pts.iter().map(|&p| hinge(p, &frame, theta, m.swing)).collect(), key)
+            }
+        })
+        .collect();
+    posed.sort_by(|a, b| a.2.total_cmp(&b.2));
+    if orbit(UP, cam).z < 0.0 {
+        posed.reverse();
+    }
+    posed.into_iter().map(|(i, pts, _)| (i, pts)).collect()
 }
 
 pub struct Frame2d<'a> {
@@ -185,8 +227,15 @@ pub fn draw(canvas: &mut Canvas, f: &Frame2d, pal: &Palette) {
         V2::new((pivot.x + r.x * s - f.view.min.x) * px, (pivot.y + r.y * s - f.view.min.y) * px)
     };
 
-    let p = pose(f.stage, f.step, f.t);
-    for (i, pts) in paint_order(&p, &f.stage.faces, f.cam) {
+    let (order, still_normal) = match &f.stage.motion {
+        Some(motion) => (compound_pose(f.stage, motion, f.t, f.cam), UP),
+        None => {
+            let p = pose(f.stage, f.step, f.t);
+            let order = paint_order(&p, &f.stage.faces, f.cam).into_iter().cloned().collect();
+            (order, p.still.normal)
+        }
+    };
+    for (i, pts) in &order {
         let face = &f.stage.faces[*i];
         let scr: Vec<V2> = pts.iter().map(|&q| project(q)).collect();
         let (a, a0) = (area(&scr), area(&face.orig));
@@ -199,7 +248,7 @@ pub fn draw(canvas: &mut Canvas, f: &Frame2d, pal: &Palette) {
         }
     }
 
-    if !f.dots.is_empty() && orbit(p.still.normal, f.cam).z > 0.0 {
+    if !f.dots.is_empty() && orbit(still_normal, f.cam).z > 0.0 {
         for d in f.dots {
             canvas.disc(project(flat(V2::new(d.x, d.y))), (d.r * px).max(1.2), [22.0; 3]);
         }
@@ -236,6 +285,11 @@ fn notation(canvas: &mut Canvas, f: &Frame2d, ink: Rgb, alpha: f64, project: &dy
             head(canvas, s[0], s[2.min(n - 1)], open, ink, alpha);
         }
     };
+
+    if let Some(motion) = &f.stage.motion {
+        compound_notation(canvas, f, motion, ink, alpha, project, &arc);
+        return;
+    }
 
     let Some((fold, kind)) = f.step.fold() else {
         let b = bounds(&f.stage.faces);
@@ -279,4 +333,55 @@ fn notation(canvas: &mut Canvas, f: &Frame2d, ink: Rgb, alpha: f64, project: &dy
         })
         .collect();
     arc(canvas, curve, kind == FoldKind::Mountain, kind == FoldKind::Crease);
+}
+
+/// Bends an arrow from `from` to `to`, lifted off the table so it reads as a fold over or under.
+fn fold_arrow(from: V2, to: V2, along: V2, lift: f64) -> Vec<V3> {
+    let span = (to.x - from.x).hypot(to.y - from.y);
+    let ctrl = V3 { x: (from.x + to.x) / 2.0 + along.x * span * 0.3, y: (from.y + to.y) / 2.0 + along.y * span * 0.3, z: lift * span * 0.6 };
+    let (p0, p2) = (flat(from), flat(to));
+    (0..=16)
+        .map(|k| {
+            let t = k as f64 / 16.0;
+            let m = |a: f64, b: f64, c: f64| (1.0 - t).powi(2) * a + 2.0 * (1.0 - t) * t * b + t * t * c;
+            V3 { x: m(p0.x, ctrl.x, p2.x), y: m(p0.y, ctrl.y, p2.y), z: m(p0.z, ctrl.z, p2.z) }
+        })
+        .collect()
+}
+
+/// Draws a polyline arrow: points, open head, heads at both ends.
+type Arc<'a> = dyn Fn(&mut Canvas, Vec<V3>, bool, bool) + 'a;
+
+/// One crease line and arrow per distinct line in a compound fold.
+fn compound_notation(
+    canvas: &mut Canvas,
+    f: &Frame2d,
+    motion: &[Option<Motion>],
+    ink: Rgb,
+    alpha: f64,
+    project: &dyn Fn(V3) -> V2,
+    arc: &Arc,
+) {
+    let same = |a: &Line, b: &Line| a.iter().zip(b).all(|(p, q)| (p.x - q.x).abs() < 1e-6 && (p.y - q.y).abs() < 1e-6);
+    let mut lines: Vec<(Line, f64)> = Vec::new();
+    for m in motion.iter().flatten() {
+        if !lines.iter().any(|(l, _)| same(l, &m.over[0])) {
+            lines.push((m.over[0], m.swing));
+        }
+    }
+    for (line, swing) in lines {
+        let group: Vec<usize> = (0..motion.len()).filter(|&i| motion[i].as_ref().is_some_and(|m| same(&m.over[0], &line))).collect();
+        let from = centroid(&group.iter().flat_map(|&i| f.stage.faces[i].pts.iter().copied()).collect::<Vec<_>>());
+        let to = centroid(&group.iter().flat_map(|&i| f.stage.after[i].pts.iter().copied()).collect::<Vec<_>>());
+        let frame = Frame::new(line, from);
+        let ext = f.view.size * 0.03;
+        let [a, b] = line;
+        let l0 = project(flat(V2::new(a.x - frame.u.x * ext, a.y - frame.u.y * ext)));
+        let l1 = project(flat(V2::new(b.x + frame.u.x * ext, b.y + frame.u.y * ext)));
+        let dash: &[u32] = if swing < 0.0 { &[4, 2, 1, 2] } else { &[3, 2] };
+        canvas.line(l0, l1, dash, ink, alpha);
+        if (to.x - from.x).hypot(to.y - from.y) > 1.0 {
+            arc(canvas, fold_arrow(from, to, frame.u, swing), swing < 0.0, false);
+        }
+    }
 }

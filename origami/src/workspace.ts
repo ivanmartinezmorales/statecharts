@@ -5,14 +5,24 @@ import { markDone } from './progress';
 import { kami } from './kami';
 import { esc, icons } from './icons';
 
-/** The lesson that teaches the symbol a step uses. */
-const lessonFor: Record<Step['kind'], { slug: string; name: string }> = {
+const lessons: Record<Exclude<Step['kind'], 'reverse'>, { slug: string; name: string }> = {
   valley: { slug: 'valley-fold', name: 'valley fold' },
   mountain: { slug: 'mountain-fold', name: 'mountain fold' },
   crease: { slug: 'crease', name: 'fold and unfold' },
   flip: { slug: 'turn-over', name: 'turn over' },
   rotate: { slug: 'rotate', name: 'rotate' },
+  squash: { slug: 'squash-fold', name: 'squash fold' },
+  petal: { slug: 'petal-fold', name: 'petal fold' },
+  collapse: { slug: 'squash-fold', name: 'squash fold' },
 };
+
+/** The lesson that teaches the symbol a step uses. */
+const lessonFor = (step: Step) =>
+  step.kind === 'reverse'
+    ? step.direction === 'inside'
+      ? { slug: 'inside-reverse-fold', name: 'inside reverse fold' }
+      : { slug: 'outside-reverse-fold', name: 'outside reverse fold' }
+    : lessons[step.kind];
 
 /** First sentence of a step, for the step list. */
 const short = (text: string) => text.split(/(?<=\.)\s/)[0]!.replace(/\.$/, '');
@@ -102,7 +112,7 @@ export function workspace(app: HTMLElement, model: Model): () => void {
     canvas.setAttribute('aria-label', step.text);
     count.textContent = `Step ${i + 1} of ${steps.length}`;
     instruction.textContent = step.text;
-    const lesson = lessonFor[step.kind];
+    const lesson = lessonFor(step);
     symbol.hidden = lesson.slug === model.slug;
     symbol.href = `#/fold/${lesson.slug}`;
     symbol.textContent = `Uses the ${lesson.name} symbol`;

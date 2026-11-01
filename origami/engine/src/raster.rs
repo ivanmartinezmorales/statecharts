@@ -74,7 +74,7 @@ impl Canvas {
                 }
             }
             xs.sort_by(|a, b| a.total_cmp(b));
-            for pair in xs.chunks_exact(2) {
+            for pair in xs.as_chunks::<2>().0 {
                 let from = (pair[0] - 0.5).ceil().max(0.0) as i64;
                 let to = (pair[1] - 0.5).floor().min(self.size as f64 - 1.0) as i64;
                 for x in from..=to {
