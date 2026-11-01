@@ -113,6 +113,45 @@ impl Canvas {
         }
     }
 
+    /// A round-capped polyline `width` pixels wide. `dash` alternates on and off lengths in pixels
+    /// along the whole line; empty means solid. Each pixel is blended once, so overlaps don't darken.
+    pub fn stroke(&mut self, pts: &[V2], width: f64, dash: &[f64], c: Rgb, alpha: f64) {
+        let mut mask = vec![false; self.size * self.size];
+        let r = width / 2.0;
+        let period: f64 = dash.iter().sum();
+        let mut travelled = 0.0;
+        for w in pts.windows(2) {
+            let (a, b) = (w[0], w[1]);
+            let len = (b.x - a.x).hypot(b.y - a.y);
+            let steps = (len / 0.4).ceil().max(1.0) as usize;
+            for k in 0..=steps {
+                let t = k as f64 / steps as f64;
+                if period > 0.0 && !on_dash_f(dash, (travelled + len * t) % period) {
+                    continue;
+                }
+                let p = a.lerp(b, t);
+                let (x0, x1) = ((p.x - r).floor() as i64, (p.x + r).ceil() as i64);
+                let (y0, y1) = ((p.y - r).floor() as i64, (p.y + r).ceil() as i64);
+                for y in y0..=y1 {
+                    for x in x0..=x1 {
+                        let (dx, dy) = (x as f64 + 0.5 - p.x, y as f64 + 0.5 - p.y);
+                        if dx * dx + dy * dy <= r * r {
+                            if let Some(i) = self.index(x, y) {
+                                mask[i / 4] = true;
+                            }
+                        }
+                    }
+                }
+            }
+            travelled += len;
+        }
+        for (i, on) in mask.into_iter().enumerate() {
+            if on {
+                self.blend((i % self.size) as i64, (i / self.size) as i64, c, alpha);
+            }
+        }
+    }
+
     pub fn disc(&mut self, c: V2, r: f64, color: Rgb) {
         let (x0, x1) = ((c.x - r).floor() as i64, (c.x + r).ceil() as i64);
         let (y0, y1) = ((c.y - r).floor() as i64, (c.y + r).ceil() as i64);
@@ -125,6 +164,16 @@ impl Canvas {
             }
         }
     }
+}
+
+fn on_dash_f(dash: &[f64], mut at: f64) -> bool {
+    for (i, len) in dash.iter().enumerate() {
+        if at < *len {
+            return i % 2 == 0;
+        }
+        at -= len;
+    }
+    true
 }
 
 fn on_dash(dash: &[u32], mut at: u32) -> bool {

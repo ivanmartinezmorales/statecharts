@@ -2,11 +2,16 @@
 
 use serde::Deserialize;
 
-use crate::geom::{area, bounds, centroid, reflect, reflect_all, Face, FoldKind, Frame, Line, Motion, Stage, Step, V2};
+use crate::geom::{area, bounds, SLIVER, centroid, reflect, reflect_all, Face, FoldKind, Frame, Line, Motion, Stage, Step, V2};
 use crate::raster::{hash, mix, scale, Canvas, Rgb};
 
 /// Canvas resolution. The page scales it up with nearest-neighbour sampling for the pixel look.
-pub const PIXELS: usize = 112;
+pub const PIXELS: usize = 256;
+
+/// How many pixels stand in for one pixel of the original 112px design, for sizing ink and marks.
+const DENSITY: f64 = PIXELS as f64 / 112.0;
+/// Width of fold lines and arrows.
+const INK: f64 = 1.6 * DENSITY;
 
 #[derive(Clone, Copy)]
 pub struct View {
@@ -210,7 +215,8 @@ pub fn mat(pal: &Palette) -> Canvas {
     let mut c = Canvas::new(PIXELS);
     for y in 0..PIXELS {
         for x in 0..PIXELS {
-            let m = if x % 8 == 4 && y % 8 == 4 { 1.0 } else { hash(x, y) * 0.12 };
+            let dot = (x + 8) % 16 < 2 && (y + 8) % 16 < 2;
+            let m = if dot { 1.0 } else { hash(x, y) * 0.1 };
             c.set(x as i64, y as i64, mix(pal.stage, pal.stage_dot, m));
         }
     }
@@ -237,6 +243,9 @@ pub fn draw(canvas: &mut Canvas, f: &Frame2d, pal: &Palette) {
     };
     for (i, pts) in &order {
         let face = &f.stage.faces[*i];
+        if area(&face.pts).abs() <= SLIVER {
+            continue;
+        }
         let scr: Vec<V2> = pts.iter().map(|&q| project(q)).collect();
         let (a, a0) = (area(&scr), area(&face.orig));
         let color_up = (a.signum() == a0.signum()) != f.white_up;
@@ -250,7 +259,7 @@ pub fn draw(canvas: &mut Canvas, f: &Frame2d, pal: &Palette) {
 
     if !f.dots.is_empty() && orbit(still_normal, f.cam).z > 0.0 {
         for d in f.dots {
-            canvas.disc(project(flat(V2::new(d.x, d.y))), (d.r * px).max(1.2), [22.0; 3]);
+            canvas.disc(project(flat(V2::new(d.x, d.y))), (d.r * px).max(1.2 * DENSITY), [22.0; 3]);
         }
     }
 
@@ -262,12 +271,11 @@ pub fn draw(canvas: &mut Canvas, f: &Frame2d, pal: &Palette) {
 fn head(canvas: &mut Canvas, tip: V2, from: V2, open: bool, ink: Rgb, alpha: f64) {
     let d = (tip.x - from.x).hypot(tip.y - from.y).max(1e-9);
     let (ux, uy) = ((tip.x - from.x) / d, (tip.y - from.y) / d);
-    let size = 4.0;
+    let size = 4.5 * DENSITY;
     let l = V2::new(tip.x - ux * size - uy * size * 0.6, tip.y - uy * size + ux * size * 0.6);
     let r = V2::new(tip.x - ux * size + uy * size * 0.6, tip.y - uy * size - ux * size * 0.6);
     if open {
-        canvas.line(l, tip, &[], ink, alpha);
-        canvas.line(tip, r, &[], ink, alpha);
+        canvas.stroke(&[l, tip, r], INK, &[], ink, alpha);
     } else {
         canvas.fill(&[l, tip, r], |c, x, y| c.blend(x, y, ink, alpha));
     }
@@ -276,9 +284,7 @@ fn head(canvas: &mut Canvas, tip: V2, from: V2, open: bool, ink: Rgb, alpha: f64
 fn notation(canvas: &mut Canvas, f: &Frame2d, ink: Rgb, alpha: f64, project: &dyn Fn(V3) -> V2) {
     let arc = |canvas: &mut Canvas, pts: Vec<V3>, open: bool, both: bool| {
         let s: Vec<V2> = pts.into_iter().map(project).collect();
-        for w in s.windows(2) {
-            canvas.line(w[0], w[1], &[], ink, alpha);
-        }
+        canvas.stroke(&s, INK, &[], ink, alpha);
         let n = s.len();
         head(canvas, s[n - 1], s[n.saturating_sub(3)], open, ink, alpha);
         if both {
@@ -315,8 +321,7 @@ fn notation(canvas: &mut Canvas, f: &Frame2d, ink: Rgb, alpha: f64, project: &dy
     let ext = f.view.size * 0.04;
     let l0 = project(flat(V2::new(a.x - frame.u.x * ext, a.y - frame.u.y * ext)));
     let l1 = project(flat(V2::new(b.x + frame.u.x * ext, b.y + frame.u.y * ext)));
-    let dash: &[u32] = if kind == FoldKind::Mountain { &[4, 2, 1, 2] } else { &[3, 2] };
-    canvas.line(l0, l1, dash, ink, alpha);
+    canvas.stroke(&[l0, l1], INK, &dashes(kind == FoldKind::Mountain), ink, alpha);
 
     let movers: Vec<V2> = f.stage.faces.iter().zip(&f.stage.moving).filter(|(_, m)| **m).flat_map(|(face, _)| face.pts.iter().copied()).collect();
     let from = if movers.is_empty() { fold.toward } else { centroid(&movers) };
@@ -378,10 +383,15 @@ fn compound_notation(
         let [a, b] = line;
         let l0 = project(flat(V2::new(a.x - frame.u.x * ext, a.y - frame.u.y * ext)));
         let l1 = project(flat(V2::new(b.x + frame.u.x * ext, b.y + frame.u.y * ext)));
-        let dash: &[u32] = if swing < 0.0 { &[4, 2, 1, 2] } else { &[3, 2] };
-        canvas.line(l0, l1, dash, ink, alpha);
+        canvas.stroke(&[l0, l1], INK, &dashes(swing < 0.0), ink, alpha);
         if (to.x - from.x).hypot(to.y - from.y) > 1.0 {
             arc(canvas, fold_arrow(from, to, frame.u, swing), swing < 0.0, false);
         }
     }
+}
+
+/// Valley folds are dashes; mountain folds are dash-dot, as on printed diagrams.
+fn dashes(mountain: bool) -> Vec<f64> {
+    let d = if mountain { vec![4.0, 2.2, 1.2, 2.2] } else { vec![3.4, 2.2] };
+    d.into_iter().map(|v| v * DENSITY).collect()
 }
