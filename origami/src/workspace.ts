@@ -1,6 +1,7 @@
+import { createRenderLoop } from '../../rendering/browser/loop.mjs';
 import { all, type Model } from './models';
-import type { Step } from './diagram';
-import { PaperCanvas, type Camera } from './engine';
+import type { Step } from '../../rendering/origami/model';
+import { PaperCanvas, type Camera } from '../../rendering/origami/browser';
 import { done, markDone } from './progress';
 import { surprise } from './picker';
 import { kami } from './kami';
@@ -67,8 +68,7 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
   // A released drag keeps turning for a moment, like paper pushed across a table.
   const vel = { yaw: 0, pitch: 0 };
   let coasting = false;
-  let raf = 0;
-  let then = 0;
+  let stopCelebration = () => {};
 
   app.innerHTML = `
     <div class="workspace" style="--paper:${model.color}">
@@ -180,7 +180,7 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
     if (by) stepList.scrollBy({ top: by, behavior: motion && drawn ? 'smooth' : 'auto' });
   }
 
-  function draw() {
+  function paint() {
     const step = steps[i]!;
     paper.draw(i, eased(t), cam, complete());
     setAttr(canvas, 'aria-label', step.text);
@@ -193,7 +193,8 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
     setText(tip, tips[step.kind]);
     // Keep the address on the current step, so a reload or a shared link lands here.
     const here = `#/fold/${model.slug}${i ? `/${i + 1}` : ''}`;
-    if (location.hash !== here) history.replaceState(null, '', here);
+    const [, page, slug] = location.hash.split('/');
+    if (page === 'fold' && slug === model.slug && location.hash !== here) history.replaceState(null, '', here);
     const value = String(Math.round(t * 1000));
     if (scrub.value !== value) scrub.value = value;
     setText(play, t >= 1 ? (i === last ? 'Fold again' : 'Next step') : playing ? 'Pause' : 'Fold');
@@ -214,7 +215,7 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
     const shown = !finish.hidden;
     finish.hidden = !complete();
     if (complete() && !shown) {
-      if (markDone(model.slug)) celebrate(figure);
+      if (markDone(model.slug)) { stopCelebration(); stopCelebration = celebrate(figure); }
       const title = model.level === 'basics' ? 'Lesson complete' : `You folded a ${esc(model.name.toLowerCase())}`;
       const total = all.filter((m) => m.topic !== 'technique');
       const folded = total.filter((m) => done.has(m.slug)).length;
@@ -248,9 +249,7 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
     }
   }
 
-  function frame(now: number) {
-    const dt = Math.min(50, now - then);
-    then = now;
+  function frame(_now: number, dt: number) {
     if (playing) {
       t = Math.min(1, t + dt / (steps[i]!.kind === 'crease' ? 1800 : 1300));
       playing = t < 1;
@@ -284,15 +283,12 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
         resetting = false;
       }
     }
-    draw();
-    raf = playing || spinning || resetting || coasting || auto ? requestAnimationFrame(frame) : 0;
+    paint();
+    return playing || spinning || resetting || coasting || auto;
   }
 
-  function kick() {
-    if (raf) return;
-    then = performance.now();
-    raf = requestAnimationFrame(frame);
-  }
+  function kick() { loop.invalidate(); }
+  function draw() { loop.invalidate(); }
 
   function animate() {
     playing = true;
@@ -384,7 +380,7 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
     drag.at = e.timeStamp;
     cam.yaw = yaw;
     cam.pitch = pitch;
-    if (!raf) draw();
+    draw();
   });
   const release = (e: PointerEvent) => {
     // Only a drag that is still moving as the pointer lifts keeps going.
@@ -439,17 +435,20 @@ export function workspace(app: HTMLElement, model: Model, start = 0): () => void
       topView();
     }
   };
+  const loop = createRenderLoop(frame, { element: canvas, continuous: false });
   window.addEventListener('keydown', onKey);
   draw();
   return () => {
-    cancelAnimationFrame(raf);
+    loop.destroy();
+    stopCelebration();
+    paper.destroy();
     window.removeEventListener('keydown', onKey);
   };
 }
 
 /** A burst of square paper confetti over the stage, the first time a model is finished. */
 function celebrate(stage: HTMLElement) {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return () => {};
   const canvas = document.createElement('canvas');
   canvas.className = 'confetti';
   canvas.width = canvas.height = 128;
@@ -464,10 +463,8 @@ function celebrate(stage: HTMLElement) {
     color: kami[Math.floor(Math.random() * kami.length)]!.hex,
   }));
   const start = performance.now();
-  let then = start;
-  const tick = (now: number) => {
-    const dt = (now - then) / 1000;
-    then = now;
+  const tick = (now: number, elapsed: number) => {
+    const dt = elapsed / 1000;
     ctx.clearRect(0, 0, 128, 128);
     for (const b of bits) {
       b.vy += 160 * dt;
@@ -476,8 +473,10 @@ function celebrate(stage: HTMLElement) {
       ctx.fillStyle = b.color;
       ctx.fillRect(Math.round(b.x), Math.round(b.y), b.size, b.size);
     }
-    if (now - start < 1800) requestAnimationFrame(tick);
-    else canvas.remove();
+    if (now - start < 1800) return true;
+    stop();
   };
-  requestAnimationFrame(tick);
+  const loop = createRenderLoop(tick, { element: canvas, continuous: false });
+  const stop = () => { loop.destroy(); canvas.remove(); };
+  return stop;
 }

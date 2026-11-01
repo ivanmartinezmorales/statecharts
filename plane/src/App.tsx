@@ -1,7 +1,8 @@
+import { createRenderLoop, type RenderLoop } from '../../rendering/browser/loop.mjs'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { between, frameAt, isoYaw } from './camera'
-import { createCompositor } from './compositor'
-import { loadEngine, type V3 } from './engine'
+import { createRenderer } from '../../rendering/plane/web/renderer'
+import type { V3 } from '../../rendering/plane/web/engine'
 import { CHAPTERS, COVER, deepTour, STOPS, type DeepStep, type Stop, type View } from './tour'
 
 // The page: one fixed canvas where the engine draws a row of dioramas, and a column of cards that scrolls over it.
@@ -11,18 +12,11 @@ import { CHAPTERS, COVER, deepTour, STOPS, type DeepStep, type Stop, type View }
 const VIEWS: View[] = [COVER, ...STOPS]
 const STEP_MS = 1100
 
-/** Framebuffer pixels per CSS pixel: small enough for detail, big enough to read as pixel art. Raised if the
- *  device cannot keep up. */
-let scale = 1.5
-
 type Deep = { stop: Stop; steps: DeepStep[]; i: number }
 type Move = { from: View; to: View; t0: number }
 
 export function App() {
-  const gpu = useRef<HTMLCanvasElement>(null)
-  const pic = useRef<HTMLCanvasElement>(null)
-  const glow = useRef<HTMLCanvasElement>(null)
-  const bloom = useRef<HTMLCanvasElement>(null)
+  const stage = useRef<HTMLDivElement>(null)
   const [at, setAt] = useState(0)
   const [mode, setMode] = useState('')
   const [deep, setDeep] = useState<Deep | null>(null)
@@ -33,27 +27,27 @@ export function App() {
   const orbit = useRef({ yaw: 0, goal: 0, zoom: 1 })
 
   useEffect(() => {
-    let raf = 0, last = 0, alive = true, slow = 0
-    let unlisten = () => {}
+    let slow = 0
+    let loop: RenderLoop | undefined
+    // Increase pixel size only when sustained render time exceeds the budget.
+    let scale = 1.5
+    const controller = new AbortController()
     const still = matchMedia('(prefers-reduced-motion: reduce)').matches
+    const hdr = matchMedia('(dynamic-range: high)').matches && !new URLSearchParams(location.search).has('sdr')
+    const size = () => ({ w: Math.max(1, Math.ceil(innerWidth / scale)), h: Math.max(1, Math.ceil(innerHeight / scale)), width: innerWidth, height: innerHeight, dpr: Math.min(devicePixelRatio, 2), hdr })
     ;(async () => {
-      const engine = await loadEngine()
-      const size = () => engine.resize(Math.ceil(innerWidth / scale), Math.ceil(innerHeight / scale))
-      size()
-      const comp = await createCompositor(gpu.current!, [pic.current!, glow.current!, bloom.current!], engine)
-      if (!alive) return
-      setMode(comp.kind === 'webgpu' ? (comp.hdr ? 'HDR' : 'WebGPU') : 'Canvas')
-      const onResize = () => { size(); comp.resize() }
-      addEventListener('resize', onResize)
-      unlisten = () => removeEventListener('resize', onResize)
-      const origins: V3[] = engine.origins
+      const renderer = await createRenderer(stage.current!, size(), controller.signal)
+      if (controller.signal.aborted) { renderer.destroy(); return }
+      const mode = () => renderer.kind === 'webgpu' ? (renderer.hdr ? 'HDR' : 'WebGPU') : 'Canvas'
+      setMode(mode())
+      const origins: V3[] = renderer.origins
       const tick = (now: number) => {
-        raf = requestAnimationFrame(tick)
-        // a hidden or zero-height window has nothing to draw
-        if (now - last < 32 || !innerHeight) return
-        last = now
-        const { w, h } = engine.size()
+        if (document.hidden || !innerHeight) return
         const d = deepRef.current
+        if (!d) setAt(was => { const i = Math.round(scrollY / innerHeight - 0.2); return was === i ? was : i })
+        if (renderer.busy) return
+        const next = size()
+        const { w, h } = next
         let f
         if (d) {
           const m = move.current
@@ -68,17 +62,20 @@ export function App() {
         } else {
           f = frameAt(VIEWS, scrollY / innerHeight, origins, w, h, still)
         }
-        const t0 = performance.now()
-        engine.draw(f, still ? 2 : now / 1000)
-        comp.present()
-        // if frames take too long, draw fewer, bigger pixels
-        slow = performance.now() - t0 > 26 ? slow + 1 : Math.max(0, slow - 1)
-        if (slow > 20 && scale < 3) { scale += 0.75; slow = 0; onResize() }
-        if (!d) setAt((was) => { const i = Math.round(scrollY / innerHeight - 0.2); return was === i ? was : i })
+        return renderer.draw(f, still ? 2 : now / 1000, next).then(ms => {
+          if (controller.signal.aborted) return
+          slow = ms > 26 ? slow + 1 : Math.max(0, slow - 1)
+          if (slow > 20 && scale < 3) { scale += 0.75; slow = 0 }
+          setMode(mode())
+        }).catch(error => {
+          if (controller.signal.aborted) return
+          console.error('Rendering failed', error)
+          loop?.destroy()
+        })
       }
-      raf = requestAnimationFrame(tick)
-    })()
-    return () => { alive = false; cancelAnimationFrame(raf); unlisten() }
+      loop = createRenderLoop(tick, { element: stage.current! })
+    })().catch(error => { if (!controller.signal.aborted) console.error('Renderer startup failed', error) })
+    return () => { controller.abort(); loop?.destroy() }
   }, [])
 
   const go = (d: Deep, from: View) => {
@@ -156,12 +153,7 @@ export function App() {
 
   return (
     <>
-      <div className="stage" aria-hidden>
-        <canvas ref={gpu} className="stage__gpu" />
-        <canvas ref={pic} className="stage__pic" />
-        <canvas ref={glow} className="stage__glow" />
-        <canvas ref={bloom} className="stage__bloom" />
-      </div>
+      <div ref={stage} className="stage" aria-hidden />
 
       <nav className="rail" aria-label="Chapters">
         <ol>

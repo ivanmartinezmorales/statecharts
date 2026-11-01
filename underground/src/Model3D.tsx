@@ -1,8 +1,10 @@
+import { createWebGLSurface } from '../../rendering/browser/webgl'
+import { createRenderLoop } from '../../rendering/browser/loop.mjs'
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { useReducedMotion } from './kit/reduced-motion'
 import type { Model } from './components'
-import { noirHex } from './noir.js'
+import { noirHex } from '../../rendering/filters/noir.mjs'
 
 // A component, built in 3D and pulled apart into its parts. It arrives whole, then explodes: a pipe or cable is
 // stripped back layer by layer like a wire, a stack lifts apart slab by slab. Drag to turn it. It is drawn at a third
@@ -93,8 +95,6 @@ export function Model3D({ model }: { model: Model }) {
     const el = host.current
     if (!el) return
     const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true })
-    renderer.setPixelRatio(1)
-    el.appendChild(renderer.domElement)
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100)
     camera.position.set(4.6, 3, 5.4)
@@ -109,15 +109,10 @@ export function Model3D({ model }: { model: Model }) {
     spin.add(group)
     scene.add(spin)
 
-    const size = () => {
-      const w = el.clientWidth, h = el.clientHeight
-      renderer.setSize(Math.max(1, Math.round(w / PIX)), Math.max(1, Math.round(h / PIX)), false)
-      camera.aspect = w / Math.max(1, h)
+    const surface = createWebGLSurface(renderer, el, PIX, (w, h) => {
+      camera.aspect = w / h
       camera.updateProjectionMatrix()
-    }
-    size()
-    const ro = new ResizeObserver(size)
-    ro.observe(el)
+    })
 
     let drag: { x: number; y: number; ry: number; rx: number } | null = null
     const down = (e: PointerEvent) => { drag = { x: e.clientX, y: e.clientY, ry: spin.rotation.y, rx: spin.rotation.x }; el.setPointerCapture(e.pointerId) }
@@ -129,26 +124,26 @@ export function Model3D({ model }: { model: Model }) {
     el.addEventListener('pointercancel', up)
 
     const t0 = performance.now()
-    let raf = 0
-    const tick = (now: number) => {
+    let previous = ''
+    const tick = (now: number, dt: number) => {
+      const key = `${hoverRef.current}:${spin.rotation.x}:${spin.rotation.y}:${el.clientWidth}:${el.clientHeight}`
+      if (reduced && key === previous) return
+      previous = key
       const u = reduced ? 1 : Math.min(1, Math.max(0, (now - t0 - 500) / 1400))
       const t = u < 0.5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2
       parts.forEach((p, i) => {
         p.place(t)
         p.meshes.forEach((m) => (m.material as THREE.MeshLambertMaterial).emissive.setHex(hoverRef.current === i ? 0x6a3e08 : 0x000000))
       })
-      if (!drag && !reduced) spin.rotation.y += 0.004
+      if (!drag && !reduced) spin.rotation.y += dt * 0.00024
       renderer.render(scene, camera)
-      raf = requestAnimationFrame(tick)
     }
-    raf = requestAnimationFrame(tick)
+    const loop = createRenderLoop(tick, { element: el })
     return () => {
-      cancelAnimationFrame(raf)
-      ro.disconnect()
+      loop.destroy()
       el.removeEventListener('pointerdown', down); el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up)
       scene.traverse((o) => { if (o instanceof THREE.Mesh) { o.geometry.dispose(); (o.material as THREE.Material).dispose() } })
-      renderer.dispose()
-      renderer.domElement.remove()
+      surface.destroy()
     }
   }, [model, reduced])
 

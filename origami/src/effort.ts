@@ -1,4 +1,4 @@
-import type { Step } from './diagram';
+import type { Step } from '../../rendering/origami/model';
 import type { Model } from './models';
 
 /** Rough minutes a first-timer spends on one step of each kind, with real paper in hand. */

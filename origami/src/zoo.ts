@@ -1,6 +1,6 @@
 // More animals, a couple of flowers and some things to fold. Simple folds wherever the shape allows.
 
-import { v, type Line, type Step, type Vec2 } from './diagram';
+import { v, type Line, type Step, type Vec2 } from '../../rendering/origami/model';
 import type { Model } from './models';
 import { ears, forehead, pointUp } from './menagerie';
 

@@ -5,18 +5,24 @@
   "description": "A scrolling pixel-art tour of the Boeing 787 and its systems, drawn by a Rust engine compiled to WASM.",
   "type": "module",
   "scripts": {
-    "wasm": "cd engine && cargo build --release --target wasm32-unknown-unknown && mkdir -p ../public && cp target/wasm32-unknown-unknown/release/plane_engine.wasm ../public/engine.wasm",
+    "wasm": "cargo build --manifest-path ../rendering/plane/Cargo.toml --release --target wasm32-unknown-unknown && mkdir -p public && cp ../rendering/plane/target/wasm32-unknown-unknown/release/plane_engine.wasm public/engine.wasm",
     "dev": "npm run wasm && vite",
     "build": "npm run wasm && tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview --port 5330",
-    "deploy": "npm run build && vercel deploy dist --prod --yes --project how-a-787-works --create-if-missing --scope ivanmartinez-8194s-projects"
+    "deploy": "npm run build && vercel deploy dist --prod --yes --project how-a-787-works --create-if-missing --scope ivanmartinez-8194s-projects",
+    "test:engine": "npm run wasm && node --test tests/engine.test.mjs",
+    "test:browser": "playwright test",
+    "test": "npm run test:engine && npm run test:browser",
+    "test:apps": "playwright test --config playwright.apps.config.ts",
+    "test:shared": "node --test ../rendering/tests/*.test.mjs"
   },
   "dependencies": {
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "4.7.0",

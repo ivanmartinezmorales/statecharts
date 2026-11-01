@@ -1,7 +1,7 @@
 // Lessons for the compound folds (squash, petal, reverse) and the advanced models built from them.
 // Every model here starts from the same diamond: a square sheet with a corner pointing at you.
 
-import { v, type Line, type Part, type Step, type Vec2 } from './diagram';
+import { v, type Line, type Part, type Step, type Vec2 } from '../../rendering/origami/model';
 import type { Model } from './models';
 
 const diamond = [v(50, 0), v(100, 50), v(50, 100), v(0, 50)];

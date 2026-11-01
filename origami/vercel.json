@@ -3,5 +3,5 @@
   "installCommand": "bash scripts/install-rust.sh && npm install",
   "buildCommand": "PATH=\"$HOME/.cargo/bin:$PATH\" npm run build",
   "outputDirectory": "dist",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ."
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ../rendering"
 }

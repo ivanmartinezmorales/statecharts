@@ -1,9 +1,10 @@
+import { createRenderLoop } from '../../rendering/browser/loop.mjs'
 import { useEffect, useRef, useState } from 'react'
 import { useReducedMotion } from './kit/reduced-motion'
 import type { Journey as Kind } from './components'
 import { COMPONENTS } from './components'
 import { Detail } from './Detail'
-import { gradeCanvas, rain } from './noir.js'
+import { gradeCanvas, rain } from '../../rendering/filters/noir.mjs'
 
 // A system's whole world as one long pixel panorama (640 x 200), and one drop that travels through it as you scroll.
 // The camera follows the drop; at each stop, the caption says what happens there. Everything else keeps flowing.
@@ -310,9 +311,13 @@ export function Journey({ kind, onClose, onEnd, start = 0 }: { kind: Kind; onClo
   useEffect(() => {
     const g = canvas.current?.getContext('2d', { willReadFrequently: true })
     if (!g) return
-    let raf = 0, lastF = -1
+    let lastF = -1, previous = ''
     const tick = (now: number) => {
-      const t = now / 1000, p = progress.current
+      const p = progress.current
+      const key = `${p.target}:${innerWidth}:${innerHeight}`
+      if (reduced && key === previous) return
+      previous = key
+      const t = reduced ? 2 : now / 1000
       p.now += (p.target - p.now) * (reduced ? 1 : 0.08)
       const f = Math.floor(t * 12)
       const [dx, dy] = along(scene.path, p.now)
@@ -340,10 +345,9 @@ export function Journey({ kind, onClose, onEnd, start = 0 }: { kind: Kind; onClo
       if (bar.current) bar.current.style.transform = `scaleX(${p.now})`
       let s = 0; scene.stops.forEach((st, i) => { if (p.now >= st.at - 0.02) s = i })
       setStop((was) => (was === s ? was : s))
-      raf = requestAnimationFrame(tick)
     }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    const loop = createRenderLoop(tick, { element: canvas.current! })
+    return () => loop.destroy()
   }, [scene, reduced])
 
   const st = scene.stops[stop]

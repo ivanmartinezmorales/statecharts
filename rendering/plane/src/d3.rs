@@ -3,7 +3,7 @@
 // color ramp with ordered dithering, so it stays pixel art; parts get dark outlines where they meet, the focused part
 // a gold one; and a tilt-shift blur at the top and bottom of the frame makes it read as a miniature.
 
-use crate::gfx::{ramp, rgb, Canvas};
+use crate::gfx::{bayer, rgb, Canvas};
 
 #[derive(Clone, Copy, Default, Debug)]
 pub struct V3 {
@@ -344,6 +344,13 @@ pub fn draw(c: &mut Canvas, fr: &Frame, mesh: &Mesh, xf: &Xf, id: u8) {
         if area.abs() < 1e-4 {
             continue;
         }
+        let x0 = a.0.min(b.0).min(d.0).floor().max(0.0) as i32;
+        let x1 = (a.0.max(b.0).max(d.0).ceil() as i32).min(w);
+        let y0 = a.1.min(b.1).min(d.1).floor().max(0.0) as i32;
+        let y1 = (a.1.max(b.1).max(d.1).ceil() as i32).min(h);
+        if x0 >= x1 || y0 >= y1 {
+            continue;
+        }
         let mut n = wp[1].sub(wp[0]).cross(wp[2].sub(wp[0])).norm();
         // two-sided: cut-open parts show their insides
         if n.dot(fr.cam.eye().sub(wp[0])) < 0.0 {
@@ -352,10 +359,13 @@ pub fn draw(c: &mut Canvas, fr: &Frame, mesh: &Mesh, xf: &Xf, id: u8) {
         let lum = (ambient + (1.0 - ambient) * n.dot(fr.light).max(0.0)).min(1.0);
         let m = &fr.mats[tri.mat as usize];
         let glow = if m.glow != 0 { Some(rgb(m.glow)) } else { None };
-        let x0 = a.0.min(b.0).min(d.0).floor().max(0.0) as i32;
-        let x1 = (a.0.max(b.0).max(d.0).ceil() as i32).min(w);
-        let y0 = a.1.min(b.1).min(d.1).floor().max(0.0) as i32;
-        let y1 = (a.1.max(b.1).max(d.1).ceil() as i32).min(h);
+        let (lo, hi, fraction) = if m.shader.is_none() && m.ramp.len() > 1 {
+            let u = lum.clamp(0.0, 1.0) * (m.ramp.len() - 1) as f32;
+            let i = (u as usize).min(m.ramp.len() - 2);
+            (m.ramp[i], m.ramp[i + 1], u - i as f32)
+        } else {
+            (m.ramp[0], m.ramp[0], 0.0)
+        };
         for py in y0..y1 {
             for px in x0..x1 {
                 if m.sheer == 1 && (px + py) % 2 == 0 || m.sheer == 2 && (px % 2 != 0 || py % 2 != 0) {
@@ -363,9 +373,12 @@ pub fn draw(c: &mut Canvas, fr: &Frame, mesh: &Mesh, xf: &Xf, id: u8) {
                 }
                 let (x, y) = (px as f32 + 0.5, py as f32 + 0.5);
                 let w0 = ((b.0 - x) * (d.1 - y) - (b.1 - y) * (d.0 - x)) / area;
+                if w0 < 0.0 {
+                    continue;
+                }
                 let w1 = ((d.0 - x) * (a.1 - y) - (d.1 - y) * (a.0 - x)) / area;
                 let w2 = 1.0 - w0 - w1;
-                if w0 < 0.0 || w1 < 0.0 || w2 < 0.0 {
+                if w1 < 0.0 || w2 < 0.0 {
                     continue;
                 }
                 let z = w0 * a.2 + w1 * b.2 + w2 * d.2;
@@ -383,7 +396,7 @@ pub fn draw(c: &mut Canvas, fr: &Frame, mesh: &Mesh, xf: &Xf, id: u8) {
                         let p = tri.p[0].mul(w0).add(tri.p[1].mul(w1)).add(tri.p[2].mul(w2));
                         sh(&Px { p, lum, t: fr.t, dx: px, dy: py, anim: fr.anim }, m)
                     }
-                    None => (ramp(m.ramp, lum, px, py), m.k),
+                    None => (if fraction > bayer(px, py) { hi } else { lo }, m.k),
                 };
                 c.px[i] = col;
                 if m.sheer > 0 {
@@ -412,7 +425,6 @@ pub fn begin(c: &mut Canvas) {
 /// tilt-shift blur above and below the middle of the frame.
 pub fn finish(c: &mut Canvas, focus: u8, pulse: f32) {
     let (w, h) = (c.w, c.h);
-    let mut edge = vec![0u8; w * h];
     for y in 0..h {
         for x in 0..w {
             let i = y * w + x;
@@ -422,22 +434,17 @@ pub fn finish(c: &mut Canvas, focus: u8, pulse: f32) {
             if id != r || id != d {
                 let near = c.depth[i].min(if x + 1 < w { c.depth[i + 1] } else { f32::MAX }).min(if y + 1 < h { c.depth[i + w] } else { f32::MAX });
                 if near < f32::MAX {
-                    edge[i] = if focus != 0 && (id == focus || r == focus || d == focus) { 2 } else { 1 };
+                    if focus != 0 && (id == focus || r == focus || d == focus) {
+                        c.px[i] = 0xffe27a;
+                        let l = &mut c.light[i];
+                        l[0] += 255.0 * pulse;
+                        l[1] += 226.0 * pulse;
+                        l[2] += 122.0 * pulse;
+                    } else {
+                        c.px[i] = crate::gfx::mix(c.px[i], 0x0c0618, 0.75);
+                    }
                 }
             }
-        }
-    }
-    for (i, e) in edge.iter().enumerate() {
-        match e {
-            1 => c.px[i] = crate::gfx::mix(c.px[i], 0x0c0618, 0.75),
-            2 => {
-                c.px[i] = 0xffe27a;
-                let l = &mut c.light[i];
-                l[0] += 255.0 * pulse;
-                l[1] += 226.0 * pulse;
-                l[2] += 122.0 * pulse;
-            }
-            _ => {}
         }
     }
     tilt_shift(c);
@@ -445,7 +452,9 @@ pub fn finish(c: &mut Canvas, focus: u8, pulse: f32) {
 
 fn tilt_shift(c: &mut Canvas) {
     let (w, h) = (c.w, c.h);
-    let src = c.px.clone();
+    // The output is packed after this pass, so it can hold the source pixels here.
+    c.out.copy_from_slice(&c.px);
+    let src = &c.out;
     for y in 1..h - 1 {
         let off = ((y as f32 / h as f32 - 0.52).abs() * 2.0 - 0.5).max(0.0) / 0.5;
         if off <= 0.0 {

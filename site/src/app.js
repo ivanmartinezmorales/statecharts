@@ -1,4 +1,5 @@
-'use strict';
+import { createRenderLoop } from './render-loop.mjs';
+import { createCanvasBloom } from './bloom.mjs';
 // The story player: shows the picture for the current state, the steps out of it, and a map of the whole chart.
 // A new picture arrives in blocks, then sharpens from big pixels to small ones. Over the crisp pixels sits a soft
 // layer of light: bright parts bloom, stars twinkle, and motes drift up.
@@ -19,6 +20,7 @@
   const tmp = document.createElement('canvas'), tctx = tmp.getContext('2d');
   ctx.imageSmoothingEnabled = false;
   let shown = null, animating = false, anim = 0;
+  let stopReveal = () => {};
 
   function pixelated(img, block) {
     const w = Math.max(1, Math.ceil(W / block)), h = Math.max(1, Math.ceil(H / block));
@@ -34,6 +36,7 @@
   }
 
   function show(img) {
+    stopReveal();
     const run = ++anim;
     if (reduceMotion || !shown) {
       if (!shown && !reduceMotion) return reveal(img, run);
@@ -55,19 +58,20 @@
     return new Promise((done) => {
       let drawn = 0;
       const frame = (now) => {
-        if (run !== anim) return done();
+        if (run !== anim) { stopReveal(); return; }
         const t = now - t0;
         if (t < REVEAL) {
           const want = Math.floor((1 - (1 - t / REVEAL) ** 2) * blocks.length);
           for (; drawn < want; drawn++) { const [x, y] = blocks[drawn]; ctx.drawImage(coarse, x, y, BLOCK, BLOCK, x, y, BLOCK, BLOCK); }
-          return requestAnimationFrame(frame);
+          return true;
         }
         const u = Math.min(1, (t - REVEAL) / SHARPEN), block = Math.max(1, Math.round(BLOCK - (1 - (1 - u) ** 2) * (BLOCK - 1)));
         drawWhole(img, block);
-        if (u < 1) return requestAnimationFrame(frame);
-        shown = img; animating = false; glow.set(img); done();
+        if (u < 1) return true;
+        shown = img; animating = false; glow.set(img); stopReveal();
       };
-      requestAnimationFrame(frame);
+      const loop = createRenderLoop(frame, { element: canvas, continuous: false });
+      stopReveal = () => { loop.destroy(); done(); };
     });
   }
 
@@ -75,7 +79,7 @@
   // ---- the light, drawn smooth at screen resolution so it glows while the pixels stay sharp
   const glow = (() => {
     const layer = $('glow'), g = layer.getContext('2d', { colorSpace: 'display-p3' }) || layer.getContext('2d');
-    let img = null, bloom = null, stars = [], motes = [], fade = 0, target = 0, last = 0, R = Math.random;
+    let bloom = null, bright = null, stars = [], motes = [], fade = 0, target = 0, last = 0, R = Math.random;
     const sprite = document.createElement('canvas');
     sprite.width = sprite.height = 64;
     { const x = sprite.getContext('2d'), r = x.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -85,8 +89,17 @@
 
     function fit() {
       const r = layer.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1);
-      layer.width = Math.max(1, Math.round(r.width * d)); layer.height = Math.max(1, Math.round(r.height * d));
-      if (img) study(img);
+      const w = Math.max(1, Math.round(r.width * d)), h = Math.max(1, Math.round(r.height * d));
+      if (w === layer.width && h === layer.height) return;
+      layer.width = w; layer.height = h;
+      soften();
+      loop?.invalidate();
+    }
+
+    function soften() {
+      if (!bright) return;
+      const s = layer.width / W;
+      bloom = createCanvasBloom(bright, layer.width, layer.height, [s * 2, s * 8]);
     }
 
     // Bright parts of the picture become the bloom; small points brighter than their surroundings are stars.
@@ -97,10 +110,7 @@
       const pass = x.createImageData(W, H);
       for (let i = 0; i < d.length; i += 4) { const k = Math.max(0, (lum(i) - 0.58) / 0.42); pass.data[i] = d[i]; pass.data[i + 1] = d[i + 1]; pass.data[i + 2] = d[i + 2]; pass.data[i + 3] = 255 * k; }
       const bp = document.createElement('canvas'); bp.width = W; bp.height = H; bp.getContext('2d').putImageData(pass, 0, 0);
-      bloom = document.createElement('canvas'); bloom.width = layer.width; bloom.height = layer.height;
-      const bx = bloom.getContext('2d'), s = layer.width / W;
-      bx.filter = `blur(${(s * 2).toFixed(1)}px)`; bx.drawImage(bp, 0, 0, layer.width, layer.height);
-      bx.filter = `blur(${(s * 8).toFixed(1)}px)`; bx.drawImage(bp, 0, 0, layer.width, layer.height);
+      bright = bp; soften();
       stars = [];
       for (let y = 2; y < H - 2; y++) for (let xx = 2; xx < W - 2; xx++) {
         const l = lum(4 * (y * W + xx));
@@ -137,14 +147,14 @@
       g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
     }
 
-    const loop = (now) => { draw(now); requestAnimationFrame(loop); };
+    let loop;
     fit();
+    loop = createRenderLoop(draw, { element: layer, continuous: !reduceMotion });
     let resizing = 0;
     addEventListener('resize', () => { clearTimeout(resizing); resizing = setTimeout(fit, 150); });
-    if (!reduceMotion) requestAnimationFrame(loop);
     return {
-      set(im) { img = im; study(im); target = 1; if (reduceMotion) { fade = 1; draw(performance.now()); } },
-      hide() { target = 0; if (reduceMotion) { fade = 0; draw(performance.now()); } },
+      set(im) { study(im); target = 1; if (reduceMotion) fade = 1; loop.invalidate(); },
+      hide() { target = 0; if (reduceMotion) fade = 0; loop.invalidate(); },
     };
   })();
 

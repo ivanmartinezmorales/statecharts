@@ -1,4 +1,5 @@
 node_modules
 dist
 public/engine.wasm
-engine/target
+test-results
+playwright-report

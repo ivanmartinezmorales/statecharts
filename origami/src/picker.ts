@@ -1,5 +1,6 @@
+import { createRenderLoop } from '../../rendering/browser/loop.mjs';
 import { all, levels, upcoming, type Level, type Model, type Topic } from './models';
-import { PaperCanvas, type Camera } from './engine';
+import { PaperCanvas, type Camera } from '../../rendering/origami/browser';
 import { dismissWelcome, done, welcomed } from './progress';
 import { effort, pips, time } from './effort';
 import { esc } from './icons';
@@ -47,20 +48,17 @@ const LAPSE_MS = 240;
  * sheet in a quick time-lapse, then keeps turning.
  */
 export function preview(canvas: HTMLCanvasElement, model: Model, featured = false) {
-  const finished = new PaperCanvas(canvas, model, true);
+  let finished: PaperCanvas | null = null;
   let whole: PaperCanvas | null = null;
   const last = model.steps.length - 1;
   // Tiles are top-down like a diagram; the featured model tilts and turns slowly on the mat.
   const cam: Camera = featured ? { yaw: -0.3, pitch: 0.5 } : { yaw: 0, pitch: 0 };
-  let raf = 0;
-  let then = 0;
+  let playing = false;
   let elapsed = 0;
   let lapse = false;
-  const rest = () => finished.draw(last, 1, cam, true);
-  const tick = (now: number) => {
-    const dt = Math.min(50, now - then);
-    then = now;
-    if (featured) cam.yaw += dt * 0.0005;
+  const rest = () => (finished ??= new PaperCanvas(canvas, model, true)).draw(last, 1, cam, true);
+  const tick = (_now: number, dt: number) => {
+    if (featured && playing) cam.yaw += dt * 0.0005;
     if (lapse) {
       elapsed += dt;
       const step = Math.floor(elapsed / LAPSE_MS);
@@ -68,19 +66,17 @@ export function preview(canvas: HTMLCanvasElement, model: Model, featured = fals
       else (whole ??= new PaperCanvas(canvas, model)).draw(step, (elapsed % LAPSE_MS) / LAPSE_MS, cam, false);
     }
     if (!lapse) rest();
-    raf = requestAnimationFrame(tick);
+    return lapse || (featured && playing);
   };
-  rest();
+  const loop = createRenderLoop(tick, { element: canvas, continuous: false });
   return {
     play(on: boolean, fold = false) {
-      cancelAnimationFrame(raf);
-      raf = 0;
+      playing = on;
       lapse = on && fold;
       elapsed = 0;
-      if (!on) return rest();
-      then = performance.now();
-      raf = requestAnimationFrame(tick);
+      loop.invalidate();
     },
+    destroy() { loop.destroy(); finished?.destroy(); whole?.destroy(); },
   };
 }
 
@@ -217,5 +213,5 @@ export function picker(app: HTMLElement, filter: Filter): () => void {
     }
     return p;
   });
-  return () => previews.forEach((p) => p.play(false));
+  return () => previews.forEach((p) => p.destroy());
 }

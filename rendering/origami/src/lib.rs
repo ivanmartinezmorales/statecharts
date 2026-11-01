@@ -62,7 +62,8 @@ impl Diagram {
         self.stages.len()
     }
 
-    /// Draws step `step` at fold progress `t` (0 to 1) and returns RGBA pixels. Colors are 0xRRGGBB.
+    /// Draws step `step` at fold progress `t` (0 to 1). Colors are 0xRRGGBB.
+    /// The returned RGBA pointer is valid until the next render or until this diagram is freed.
     #[allow(clippy::too_many_arguments)]
     pub fn render(
         &mut self,
@@ -76,7 +77,7 @@ impl Diagram {
         paper: u32,
         paper_back: u32,
         ink: u32,
-    ) -> Vec<u8> {
+    ) -> usize {
         let i = step.min(self.stages.len() - 1);
         let pal = Palette { stage: rgb(stage), stage_dot: rgb(stage_dot), paper: rgb(paper), paper_back: rgb(paper_back), ink: rgb(ink) };
         if self.mat.as_ref().is_none_or(|(key, _)| *key != [stage, stage_dot]) {
@@ -94,7 +95,7 @@ impl Diagram {
             dots: if show_dots { &self.model.dots } else { &[] },
         };
         draw(&mut self.canvas, &frame, &pal);
-        self.canvas.px.clone()
+        self.canvas.px.as_ptr() as usize
     }
 
     /// The folded faces after `step`, as JSON, for checking the engine against a reference.

@@ -61,7 +61,9 @@ pub struct Canvas {
     pub bloom: Vec<u32>,
     pub bw: usize,
     pub bh: usize,
-    half: Vec<[f32; 3]>,
+    pub half: Vec<[f32; 3]>,
+    pub gpu_bloom: bool,
+    pub bloom_kernel: [f32; 20],
     tmp: Vec<[f32; 3]>,
     pub depth: Vec<f32>,
     pub ids: Vec<u8>,
@@ -88,6 +90,8 @@ impl Canvas {
             bw,
             bh,
             half: vec![[0.0; 3]; bw * bh],
+            gpu_bloom: false,
+            bloom_kernel: bloom_kernel(),
             tmp: vec![[0.0; 3]; bw * bh],
             depth: vec![0.0; w * h],
             ids: vec![0; w * h],
@@ -263,8 +267,11 @@ impl Canvas {
                 self.half[y * bw + x] = [s[0] / 4.0, s[1] / 4.0, s[2] / 4.0];
             }
         }
-        blur(&self.half, &mut self.tmp, bw, bh, 1, 0, 9);
-        blur(&self.tmp, &mut self.half, bw, bh, 0, 1, 9);
+        if self.gpu_bloom {
+            return;
+        }
+        blur::<false>(&self.half, &mut self.tmp, bw, bh, &self.bloom_kernel);
+        blur::<true>(&self.tmp, &mut self.half, bw, bh, &self.bloom_kernel);
         for (b, l) in self.bloom.iter_mut().zip(self.half.iter()) {
             *b = to_rgba(pack([l[0] * 1.2, l[1] * 1.2, l[2] * 1.2]));
         }
@@ -285,22 +292,47 @@ impl Canvas {
     }
 }
 
-/// A separable Gaussian blur along one axis (sx, sy), so a bright point blooms round instead of square.
-fn blur(src: &[[f32; 3]], dst: &mut [[f32; 3]], w: usize, h: usize, sx: usize, sy: usize, r: i32) {
+/// Gaussian weights followed by their sum, shared with the GPU blur.
+fn bloom_kernel() -> [f32; 20] {
+    let r: i32 = 9;
     let sigma = r as f32 / 2.0;
-    let k: Vec<f32> = (-r..=r).map(|i| (-(i * i) as f32 / (2.0 * sigma * sigma)).exp()).collect();
-    let n: f32 = k.iter().sum();
+    let mut k = [0.0; 20];
+    for (j, weight) in k[..19].iter_mut().enumerate() {
+        let i = j as i32 - r;
+        *weight = (-(i * i) as f32 / (2.0 * sigma * sigma)).exp();
+    }
+    k[19] = k[..19].iter().sum();
+    k
+}
+
+fn blur<const VERTICAL: bool>(src: &[[f32; 3]], dst: &mut [[f32; 3]], w: usize, h: usize, kernel: &[f32; 20]) {
+    let r = 9;
+    let k = &kernel[..19];
+    let n = kernel[19];
+    let stride = if VERTICAL { w } else { 1 };
+    let length = if VERTICAL { h } else { w };
     for y in 0..h {
         for x in 0..w {
             let mut s = [0.0; 3];
-            for (j, wgt) in k.iter().enumerate() {
-                let o = j as i32 - r;
-                let xx = (x as i32 + o * sx as i32).clamp(0, w as i32 - 1) as usize;
-                let yy = (y as i32 + o * sy as i32).clamp(0, h as i32 - 1) as usize;
-                let v = src[yy * w + xx];
-                s[0] += v[0] * wgt;
-                s[1] += v[1] * wgt;
-                s[2] += v[2] * wgt;
+            let axis = if VERTICAL { y } else { x };
+            if axis >= r as usize && axis + (r as usize) < length {
+                let start = y * w + x - r as usize * stride;
+                for (j, wgt) in k.iter().enumerate() {
+                    let v = src[start + j * stride];
+                    s[0] += v[0] * wgt;
+                    s[1] += v[1] * wgt;
+                    s[2] += v[2] * wgt;
+                }
+            } else {
+                for (j, wgt) in k.iter().enumerate() {
+                    let o = j as i32 - r;
+                    let at = (axis as i32 + o).clamp(0, length as i32 - 1) as usize;
+                    let i = if VERTICAL { at * w + x } else { y * w + at };
+                    let v = src[i];
+                    s[0] += v[0] * wgt;
+                    s[1] += v[1] * wgt;
+                    s[2] += v[2] * wgt;
+                }
             }
             dst[y * w + x] = [s[0] / n, s[1] / n, s[2] / n];
         }

@@ -10,7 +10,7 @@ export function Life({ k, top = 0, rows }: { k: number; top?: number; rows: numb
   useEffect(() => {
     const g = ref.current?.getContext('2d')
     if (!g) return
-    return watch((master) => { g.clearRect(0, 0, W, rows); g.drawImage(master, 0, top, W, rows, 0, 0, W, rows) }, reduced)
+    return watch((master) => { g.clearRect(0, 0, W, rows); g.drawImage(master, 0, top, W, rows, 0, 0, W, rows) }, reduced, ref.current!)
   }, [top, rows, reduced])
   return <canvas ref={ref} className="ug-life" width={W} height={rows} aria-hidden style={{ width: W * k, height: rows * k, top: 0 }} />
 }

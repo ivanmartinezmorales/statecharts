@@ -1,4 +1,4 @@
-import { v, type Dot, type Only, type Step, type Vec2 } from './diagram';
+import { v, type Dot, type Only, type Step, type Vec2 } from '../../rendering/origami/model';
 import { advanced, techniques } from './advanced';
 import { menagerie } from './menagerie';
 import { zoo } from './zoo';
