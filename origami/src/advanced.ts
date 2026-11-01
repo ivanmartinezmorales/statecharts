@@ -212,6 +212,21 @@ function frogPetal(left: readonly Vec2[], right: readonly Vec2[], text: string):
   ];
 }
 
+/** The halves of square.right and square.left that are pages of the frog base, like the flapBack triangles. */
+const page = {
+  rightLow: [v(50, 50), v(100, 50), v(75, 75)],
+  rightHigh: [v(50, 50), v(75, 25), v(100, 50)],
+  leftLow: [v(50, 50), v(0, 50), v(25, 75)],
+  leftHigh: [v(50, 50), v(25, 25), v(0, 50)],
+};
+
+/** Narrows the lower part of one page of the frog base by folding its outer edge to the center line. */
+function narrowPage(side: 'left' | 'right', within: readonly Vec2[], text: string): Step {
+  return side === 'left'
+    ? { kind: 'valley', line: [bottom, kiteL2], move: kiteSideL, only: { within }, text }
+    : { kind: 'valley', line: [bottom, kiteR2], move: kiteSideR, only: { within }, text };
+}
+
 /** Narrows one lower flap of the bird base by folding its outer edge to the center. */
 function narrow(side: 'left' | 'right', flap: readonly Vec2[], text: string): Step {
   const x = side === 'left' ? 67.97 : 82.03;
@@ -332,35 +347,19 @@ export const advanced: Model[] = [
       pageBack(flapBack.frontRight, 'Turn the left half of the top flap over to the right.'),
       pageBack(flapBack.frontLeft, 'Turn one more page to the right.'),
       ...frogPetal(square.right, flapBack.frontLeft, 'Petal fold the last flap. This is the frog base.'),
-      {
-        kind: 'valley',
-        line: [bottom, kiteL2],
-        move: kiteSideL,
-        only: { within: square.right, layers: 'front' },
-        text: 'Fold the lower left edge of the front flap to the center line. The bottom gets long and thin.',
-      },
-      {
-        kind: 'valley',
-        line: [bottom, kiteR2],
-        move: kiteSideR,
-        only: { within: flapBack.frontLeft, layers: 'front' },
-        text: 'Fold the lower right edge to the center line too.',
-      },
+      narrowPage('left', page.rightLow, 'Fold the lower left edge of the front layer to the center line. The bottom gets long and thin.'),
+      narrowPage('right', flapBack.frontLeft, 'Fold the lower right edge to the center line too.'),
+      pageBack(page.rightLow, 'Turn the left half of the top flap over to the right.'),
+      pageBack(page.leftLow, 'Turn one more page, so two plain edges face you.'),
+      narrowPage('left', flapBack.backRight, 'Narrow the lower left edge of this flap.'),
+      narrowPage('right', page.leftLow, 'And the lower right edge.'),
       { kind: 'flip', text: 'Turn the model over.' },
-      {
-        kind: 'valley',
-        line: [bottom, kiteL2],
-        move: kiteSideL,
-        only: { within: square.left, layers: 'front' },
-        text: 'Narrow this side the same way: lower left edge to the center.',
-      },
-      {
-        kind: 'valley',
-        line: [bottom, kiteR2],
-        move: kiteSideR,
-        only: { within: flapBack.backLeft, layers: 'front' },
-        text: 'And the lower right edge. Turn a page on each side and narrow the two inner flaps the same way.',
-      },
+      narrowPage('left', page.leftHigh, 'Narrow this side the same way: lower left edge to the center.'),
+      narrowPage('right', flapBack.backLeft, 'And the lower right edge.'),
+      pageBack(page.leftHigh, 'Turn the left half of the top flap over to the right.'),
+      pageBack(page.rightHigh, 'Turn one more page.'),
+      narrowPage('left', flapBack.frontRight, 'Narrow the last two edges: lower left first.'),
+      narrowPage('right', page.rightHigh, 'Then lower right. All four flaps are long and thin.'),
       { kind: 'rotate', deg: 180, text: 'Turn the lily upside down: the four long thin flaps are the petals.' },
     ],
     finish: 'Pull the four long petals down and outward one at a time, then curl each one around a pencil. The lily opens.',
