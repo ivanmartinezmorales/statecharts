@@ -918,7 +918,7 @@ a.tile:hover .tile-name {
   font-size: 14px;
   line-height: 20px;
   color: var(--ink-2);
-  transition: background-color 160ms var(--ease);
+  transition: background-color 160ms var(--ease), color 160ms var(--ease);
 }
 
 .step-list button:hover {
@@ -940,6 +940,7 @@ a.tile:hover .tile-name {
   background: var(--raised);
   font-size: 12px;
   font-weight: 600;
+  transition: background-color 240ms var(--ease), color 240ms var(--ease);
 }
 
 .step-list .past .num {
