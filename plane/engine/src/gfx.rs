@@ -108,10 +108,6 @@ impl Canvas {
         self.oy = (cy * self.z - self.h as f32 / 2.0).round() as i32;
     }
 
-    pub fn clear(&mut self, c: u32) {
-        self.px.fill(c);
-    }
-
     #[inline]
     pub fn sx(&self, x: f32) -> f32 {
         (x - self.cx) * self.z + self.w as f32 / 2.0
@@ -178,30 +174,6 @@ impl Canvas {
         self.fill(x, y, x + w, y + h, |wx, wy, dx, dy| (wx >= x && wx < x + w && wy >= y && wy < y + h).then(|| p(wx, wy, dx, dy)));
     }
 
-    /// A vertical ramp across a box, dithered.
-    pub fn vramp(&mut self, x: f32, y: f32, w: f32, h: f32, stops: &[u32]) {
-        self.rect_with(x, y, w, h, |_, wy, dx, dy| ramp(stops, (wy - y) / h, dx, dy));
-    }
-
-    pub fn ellipse(&mut self, cx: f32, cy: f32, rx: f32, ry: f32, c: u32) {
-        self.fill(cx - rx, cy - ry, cx + rx, cy + ry, |wx, wy, _, _| {
-            let (u, v) = ((wx - cx) / rx, (wy - cy) / ry);
-            (u * u + v * v <= 1.0).then_some(c)
-        });
-    }
-
-    /// An ellipse lit from the top left: a sphere or a puff of cloud, in a ramp from shadow to light.
-    pub fn ball(&mut self, cx: f32, cy: f32, rx: f32, ry: f32, stops: &[u32]) {
-        self.fill(cx - rx, cy - ry, cx + rx, cy + ry, |wx, wy, dx, dy| {
-            let (u, v) = ((wx - cx) / rx, (wy - cy) / ry);
-            let d = u * u + v * v;
-            (d <= 1.0).then(|| {
-                let lit = (1.0 - ((u + 0.45).powi(2) + (v + 0.55).powi(2)).sqrt() * 0.62).clamp(0.0, 1.0);
-                ramp(stops, lit, dx, dy)
-            })
-        });
-    }
-
     pub fn poly(&mut self, pts: &[(f32, f32)], c: u32) {
         self.poly_with(pts, |_, _, _, _| c);
     }
@@ -223,18 +195,6 @@ impl Canvas {
         self.fill(x0.min(x1) - r, y0.min(y1) - r, x0.max(x1) + r, y0.max(y1) + r, |wx, wy, _, _| {
             (seg_dist(wx, wy, x0, y0, x1, y1).0 <= r).then_some(c)
         });
-    }
-
-    /// A line at least one pixel wide whatever the zoom: rivets, panel seams, wires.
-    pub fn hair(&mut self, x0: f32, y0: f32, x1: f32, y1: f32, c: u32) {
-        let w = (1.0 / self.z).max(0.0);
-        self.line(x0, y0, x1, y1, w * 1.01, c);
-    }
-
-    pub fn path(&mut self, pts: &[(f32, f32)], width: f32, c: u32) {
-        for p in pts.windows(2) {
-            self.line(p[0].0, p[0].1, p[1].0, p[1].1, width, c);
-        }
     }
 
     // ---- light
@@ -406,4 +366,13 @@ impl Canvas {
             }
         }
     }
+}
+
+/// A repeatable pseudo-random number in 0..1 for an integer: placement of stars, windows, clouds.
+pub fn hash(i: u32) -> f32 {
+    let mut x = i.wrapping_mul(0x9E37_79B9) ^ 0x85eb_ca6b;
+    x ^= x >> 15;
+    x = x.wrapping_mul(0x2c1b_3c6d);
+    x ^= x >> 12;
+    (x & 0xffff) as f32 / 65535.0
 }
