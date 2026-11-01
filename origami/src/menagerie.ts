@@ -7,7 +7,7 @@ const diamond = [v(50, 0), v(100, 50), v(50, 100), v(0, 50)];
 const square = [v(0, 0), v(100, 0), v(100, 100), v(0, 100)];
 const mirror = (p: Vec2) => v(100 - p.x, p.y);
 
-const pointUp: Step = {
+export const pointUp: Step = {
   kind: 'valley',
   line: [v(0, 50), v(100, 50)],
   move: v(50, 100),
@@ -18,7 +18,7 @@ const pointUp: Step = {
  * Folds the triangle's two bottom corners up into ears whose points land at `tip` and its mirror.
  * The crease runs from the middle of the bottom edge, halfway between the corner and where it lands.
  */
-function ears(tip: Vec2, text: string, mirrorText: string): Step[] {
+export function ears(tip: Vec2, text: string, mirrorText: string): Step[] {
   const pivot = v(50, 50);
   const unit = (p: Vec2) => {
     const len = Math.hypot(p.x - pivot.x, p.y - pivot.y);
@@ -36,7 +36,7 @@ function ears(tip: Vec2, text: string, mirrorText: string): Step[] {
 }
 
 /** Folds the top of the head down, leaving the ears standing. */
-const forehead = (y: number, text: string): Step => ({
+export const forehead = (y: number, text: string): Step => ({
   kind: 'valley',
   line: [v(0, y), v(100, y)],
   move: v(50, 0),

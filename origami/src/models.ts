@@ -1,6 +1,7 @@
 import { v, type Dot, type Only, type Step, type Vec2 } from './diagram';
 import { advanced, techniques } from './advanced';
 import { menagerie } from './menagerie';
+import { zoo } from './zoo';
 
 export type Level = 'basics' | 'beginner' | 'intermediate' | 'advanced';
 export type Topic = 'technique' | 'animal' | 'flower' | 'thing';
@@ -775,7 +776,7 @@ const models: Model[] = [
   },
 ];
 
-export const all: readonly Model[] = [...basics, ...techniques, ...models, ...menagerie, ...advanced];
+export const all: readonly Model[] = [...basics, ...techniques, ...models, ...menagerie, ...zoo, ...advanced];
 
 export const upcoming: readonly Upcoming[] = [
 ];
