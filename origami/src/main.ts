@@ -1,10 +1,14 @@
 import './style.css';
+import { inject } from '@vercel/analytics';
 import { all, levels } from './models';
 import { picker, topics, type Filter } from './picker';
 import { workspace } from './workspace';
 import { drawer } from './drawer';
 import { done } from './progress';
 import { ready } from '../../rendering/origami/browser';
+
+// Initialize Vercel Web Analytics
+inject();
 
 const app = document.querySelector<HTMLElement>('#app')!;
 const bar = document.querySelector<HTMLElement>('#bar')!;

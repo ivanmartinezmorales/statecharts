@@ -14,5 +14,8 @@
     "typescript": "^5.6.3",
     "vite": "^5.4.10",
     "wasm-pack": "^0.13.1"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
   }
 }
