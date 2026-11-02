@@ -2,8 +2,8 @@
 // box of composite wing, each on its own plinth. Every piece has a place it flies to as the model explodes, and focus
 // numbers follow the order of the pieces.
 
-use crate::d3::{self, lit, mat, Frame, Mat, Mesh, Xf, V3, v};
-use crate::gfx::Canvas;
+use crate::d3::{self, lit, mat, shaded, Frame, Mat, Mesh, Px, Xf, V3, v};
+use crate::gfx::{ramp, Canvas};
 use crate::pal::*;
 use crate::set::{plinth, BRASS, WOOD};
 use crate::Params;
@@ -24,7 +24,18 @@ const RUBBER: [u32; 4] = [0x120c1c, 0x231a30, 0x382c48, 0x4a3e5c];
 const HOTM: [u32; 5] = [0x6a1020, 0xc0242a, 0xff5a1f, 0xff9a2a, 0xffd86a];
 const TOPR: [u32; 4] = [0x2a1a5a, 0x34226a, 0x3e2a78, 0x4a3488];
 
-pub static MATS: [Mat; 17] = [
+/// The fan seen face on: a disc painted with swept blades that turn, which reads far better at diorama size than
+/// a cluster of thin plates.
+fn fan_face(px: &Px, m: &Mat) -> (u32, f32) {
+    let p = px.p;
+    let r = (p.y * p.y + p.z * p.z).sqrt();
+    let a = p.z.atan2(p.y) / TAU * 22.0 + r * 0.08 - px.t * 1.5;
+    let blade = a.rem_euclid(1.0) < 0.62;
+    let lum = if blade { px.lum } else { px.lum * 0.35 };
+    (ramp(m.ramp, lum, px.dx, px.dy), 0.0)
+}
+
+pub static MATS: [Mat; 18] = [
     mat(&TOPR),
     mat(&WOOD),
     mat(&BRASS),
@@ -42,6 +53,7 @@ pub static MATS: [Mat; 17] = [
     lit(&BOARD, 0x5aff8a, 0.3),
     mat(&SKINC),
     lit(&FUELM, FUEL, 0.45),
+    shaded(&CARBON, fan_face),
 ];
 const TOP: u8 = 0;
 const SIDE: u8 = 1;
@@ -60,9 +72,12 @@ const CU: u8 = 13;
 const BD: u8 = 14;
 const SC: u8 = 15;
 const FU: u8 = 16;
+const FAN: u8 = 17;
 
 /// A piece: its mesh (centered where it sits assembled) and the offset it flies to when apart.
 type Piece = (Mesh, V3);
+/// A piece as drawn: its mesh, where it flies to, and where its mount meets it.
+type Placed = (Mesh, V3, V3);
 
 fn lathe(x0: f32, x1: f32, r0: f32, r1: f32, i0: f32, i1: f32, m: u8) -> Mesh {
     let mut o = Mesh::new();
@@ -94,19 +109,19 @@ fn engine() -> Vec<Piece> {
         lpt.lathe(x, x + 0.7, r, r, 2.2, 2.2, 20, 0.0, TAU, TB);
     }
     let mut fan = lathe(-15.5, -13.5, 3.2, 3.2, 0.0, 0.0, CB);
-    fan.blades(-14.5, 3.2, 13.0, 3.0, 18, 0.5, CB);
+    fan.lathe(-15.0, -14.0, 13.0, 13.0, 3.2, 3.2, 40, 0.0, TAU, FAN);
     let mut shafts = lathe(-15.0, 14.0, 0.7, 0.7, 0.0, 0.0, SH);
     shafts.put(&lathe(-8.0, 5.6, 1.4, 1.4, 1.0, 1.0, SH), &Xf::ID);
     vec![
         (lathe(-20.0, -15.5, 0.2, 3.2, 0.0, 0.0, SK), v(-14.0, 0.0, 0.0)),
         (fan, v(-10.0, 0.0, 0.0)),
-        (lathe(-17.0, -6.0, 14.2, 14.2, 13.4, 13.4, SK), v(0.0, 19.0, 0.0)),
+        (lathe(-17.0, -6.0, 14.2, 14.2, 13.4, 13.4, SK), v(-2.0, 0.0, -20.0)),
         (booster, v(-5.5, 0.0, 0.0)),
         (hpc, v(-2.0, 0.0, 0.0)),
         (lathe(-0.5, 3.5, 5.2, 5.2, 3.0, 3.0, HT), v(2.5, 0.0, 0.0)),
         (hpt, v(6.0, 0.0, 0.0)),
         (lpt, v(10.0, 0.0, 0.0)),
-        (shafts, v(0.0, -12.0, 0.0)),
+        (shafts, v(0.0, -4.0, 17.0)),
         (lathe(13.5, 20.0, 3.5, 0.2, 0.0, 0.0, ST), v(16.0, 0.0, 0.0)),
     ]
 }
@@ -139,7 +154,7 @@ fn gear() -> Vec<Piece> {
         (truck, v(0.0, -2.0, 0.0)),
         (axle(RB, 4.5, 2.0, 1.8, -3.4), v(0.0, 0.0, -10.0)),
         (axle(RB, 4.5, 2.0, 1.8, 3.4), v(0.0, 0.0, 10.0)),
-        (brakes, v(0.0, -7.0, 0.0)),
+        (brakes, v(0.0, -2.5, 0.0)),
         (brace, v(-8.0, 4.0, 0.0)),
     ]
 }
@@ -198,12 +213,12 @@ fn wing() -> Vec<Piece> {
 }
 
 thread_local! {
-    static CACHE: RefCell<[Option<Vec<Piece>>; 4]> = const { RefCell::new([None, None, None, None]) };
+    static CACHE: RefCell<[Option<Vec<Placed>>; 4]> = const { RefCell::new([None, None, None, None]) };
 }
 
 /// The height each model floats at above its plinth, and how much room its plinth gives it.
-const LIFT: [f32; 4] = [22.0, 16.0, 12.0, 14.0];
-const BASE: [(f32, f32); 4] = [(70.0, 44.0), (44.0, 44.0), (44.0, 36.0), (52.0, 44.0)];
+const LIFT: [f32; 4] = [15.5, 12.0, 10.0, 12.0];
+const BASE: [(f32, f32); 4] = [(76.0, 72.0), (44.0, 48.0), (44.0, 36.0), (52.0, 48.0)];
 
 fn draw_model(c: &mut Canvas, fr: &mut Frame, origin: V3, p: Option<&Params>, k: usize) {
     fr.mats = &MATS;
@@ -213,24 +228,46 @@ fn draw_model(c: &mut Canvas, fr: &mut Frame, origin: V3, p: Option<&Params>, k:
     plinth(&mut base, BASE[k].0, BASE[k].1, 4.0, TOP, SIDE, TRIM);
     d3::draw(c, fr, &base, &Xf::at(origin), 1);
     let at = origin.add(v(0.0, LIFT[k], 0.0));
-    let t = fr.t;
     CACHE.with(|cache| {
         let mut cache = cache.borrow_mut();
-        let pieces = cache[k].get_or_insert_with(|| match k {
-            0 => engine(),
-            1 => gear(),
-            2 => battery(),
-            _ => wing(),
+        let pieces = cache[k].get_or_insert_with(|| {
+            let parts = match k {
+                0 => engine(),
+                1 => gear(),
+                2 => battery(),
+                _ => wing(),
+            };
+            parts.into_iter().map(|(mesh, apart)| {
+                let foot = foot(&mesh);
+                (mesh, apart, foot)
+            }).collect()
         });
-        for (i, (mesh, apart)) in pieces.iter().enumerate() {
-            let mut xf = Xf::at(at.add(apart.mul(ease)));
-            // the fan turns
-            if k == 0 && i == 1 {
-                xf = xf.roll(t * 2.0);
+        let mut rods = Mesh::new();
+        for (i, (mesh, apart, foot)) in pieces.iter().enumerate() {
+            let off = apart.mul(ease);
+            d3::draw(c, fr, mesh, &Xf::at(at.add(off)), 10 + i as u8);
+            // a display rod from the plinth to the piece's underside, like the mounts in a museum case
+            let top = LIFT[k] + foot.y + off.y;
+            if top > 0.8 {
+                let (x, z) = (foot.x + off.x, foot.z + off.z);
+                rods.tube(&[v(x, 0.0, z), v(x, top, z)], 0.3, 6, TRIM);
+                rods.cube(v(x, 0.15, z), v(1.8, 0.3, 1.8), TRIM);
             }
-            d3::draw(c, fr, mesh, &xf, 10 + i as u8);
         }
+        d3::draw(c, fr, &rods, &Xf::at(origin), 9);
     });
+}
+
+/// Where a piece's mount meets it: under the middle of its outline, at its lowest point.
+fn foot(m: &Mesh) -> V3 {
+    let (mut lo, mut hi) = (v(f32::MAX, f32::MAX, f32::MAX), v(f32::MIN, f32::MIN, f32::MIN));
+    for t in &m.tris {
+        for p in t.p {
+            lo = v(lo.x.min(p.x), lo.y.min(p.y), lo.z.min(p.z));
+            hi = v(hi.x.max(p.x), hi.y.max(p.y), hi.z.max(p.z));
+        }
+    }
+    v((lo.x + hi.x) / 2.0, lo.y, (lo.z + hi.z) / 2.0)
 }
 
 pub fn draw_engine(c: &mut Canvas, fr: &mut Frame, o: V3, p: Option<&Params>) {
