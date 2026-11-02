@@ -92,7 +92,7 @@ const VIEWS: Record<string, Record<string, View>> = {
     gust: { set: Set.Xray, look: look(0, 6, 0, -0.5, 0.7, 120), focus: 1, flows: Flow.signal },
   },
   engines: {
-    engine: { set: Set.Engine, look: look(0, 22, 0, 0.6, 0.35, 125), explode: 0.85, tour: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] },
+    engine: { set: Set.Engine, look: look(0, 12, 0, 0.6, 0.35, 130), explode: 0.85, tour: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] },
     brayton: { set: Set.Turbofan, look: FAN, flows: Flow.core | Flow.bypass, tour: [0, 1, 2, 3, 4, 5, 6] },
     fan: { set: Set.Turbofan, look: look(19, 22, 0, 1.2, 0.25, 48), focus: 0, flows: Flow.bypass },
     compressor: { set: Set.Turbofan, look: look(4, 22, 0, 0.6, 0.45, 32), focus: 2, flows: Flow.core, tour: [1, 2] },
@@ -121,7 +121,7 @@ const VIEWS: Record<string, Record<string, View>> = {
   hydraulics: {
     systems: { set: Set.Xray, look: XRAY, flows: Flow.hydraulic, tour: [14, 13, 0, 3, 4, 8] },
     pumps: { set: Set.Xray, look: look(4, 4, 0, 0.6, 0.6, 52), flows: Flow.hydraulic, focus: 14 },
-    gear: { set: Set.Gear, look: look(0, 16, 0, 0.8, 0.3, 82), explode: 0.8, tour: [0, 1, 2, 3, 4, 5, 6, 7] },
+    gear: { set: Set.Gear, look: look(0, 12, 0, 0.8, 0.3, 85), explode: 0.8, tour: [0, 1, 2, 3, 4, 5, 6, 7] },
     brakes: { set: Set.Gear, look: look(0, 12, 0, 1.3, 0.3, 62), explode: 1, focus: 6 },
     steering: { set: Set.Xray, look: look(23.8, 2, 0, 1.2, 0.3, 26), focus: 8, flows: Flow.hydraulic },
   },
